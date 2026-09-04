@@ -73,14 +73,7 @@ export function Controls({
           <strong className="text-stone-400">Listen live</strong> uses the
           microphone to paint whatever's playing out loud nearby &mdash; a
           speaker, another device, or the room. Painting starts the moment
-          it hears sound, no extra step. On iPhone, starting the microphone
-          makes iOS pause audio in <em>other</em> apps like Apple Music or
-          Spotify (an iOS restriction, not something a website can
-          override), so it can't listen to a track playing on the same
-          phone. Either play the track through a separate speaker or device
-          for this phone to listen to, or use &ldquo;Upload a file&rdquo;
-          below &mdash; that plays the track directly and works on one
-          device with no microphone involved.
+          it hears sound, no extra step.
         </p>
       </div>
 
