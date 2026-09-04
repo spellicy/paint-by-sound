@@ -3,6 +3,7 @@ import { usePaintBySound } from "./hooks/usePaintBySound";
 import { Controls } from "./components/Controls";
 import { StatusBar } from "./components/StatusBar";
 import { ConceptPanel } from "./components/ConceptPanel";
+import { InspirationPanel } from "./components/InspirationPanel";
 import { Gallery } from "./components/Gallery";
 import { loadGallery, removeFromGallery, type GalleryPiece } from "./gallery/storage";
 
@@ -22,6 +23,11 @@ export default function App() {
     stop,
     clearCanvas,
     saveCurrentToGallery,
+    inspirationTitle,
+    setInspirationTitle,
+    inspirationLyrics,
+    setInspirationLyrics,
+    themeInfluence,
   } = usePaintBySound(canvasRef);
 
   const [pieces, setPieces] = useState<GalleryPiece[]>([]);
@@ -71,6 +77,13 @@ export default function App() {
               {error}
             </p>
           )}
+          <InspirationPanel
+            title={inspirationTitle}
+            onTitleChange={setInspirationTitle}
+            lyrics={inspirationLyrics}
+            onLyricsChange={setInspirationLyrics}
+            theme={themeInfluence}
+          />
           <ConceptPanel />
         </div>
 

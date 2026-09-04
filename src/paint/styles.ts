@@ -114,11 +114,66 @@ const picasso: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
+const renoir: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // Full, round, warm dabs -- dappled light, fuller and softer than Monet's
+  // short strokes.
+  const r = 5 + note.amplitude * 20;
+  ctx.save();
+  ctx.filter = "blur(1.4px)";
+  ctx.fillStyle = color.rgba(0.45 + rand() * 0.3);
+  ctx.beginPath();
+  ctx.ellipse(
+    cursor.x,
+    cursor.y,
+    r * (0.85 + rand() * 0.5),
+    r * (0.7 + rand() * 0.45),
+    rand() * TAU,
+    0,
+    TAU,
+  );
+  ctx.fill();
+  ctx.restore();
+};
+
+const monet: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // Short broken-color brush strokes, occasionally paired with a small
+  // complementary fleck placed nearby -- impressionist juxtaposition
+  // creating shimmer at a distance rather than one blended hue.
+  const len = 4 + note.amplitude * 16;
+  const thickness = 1.5 + note.amplitude * 5;
+  const angle = rand() * Math.PI;
+  ctx.save();
+  ctx.filter = "blur(0.7px)";
+  ctx.strokeStyle = color.rgba(0.5 + rand() * 0.3);
+  ctx.lineWidth = thickness;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cursor.x - Math.cos(angle) * len * 0.5, cursor.y - Math.sin(angle) * len * 0.5);
+  ctx.lineTo(cursor.x + Math.cos(angle) * len * 0.5, cursor.y + Math.sin(angle) * len * 0.5);
+  ctx.stroke();
+
+  if (rand() < 0.3) {
+    const compHue = (color.hue + 180) % 360;
+    ctx.fillStyle = `hsla(${compHue.toFixed(1)}, ${color.saturation.toFixed(0)}%, ${Math.min(90, color.lightness + 8).toFixed(0)}%, 0.3)`;
+    ctx.beginPath();
+    ctx.arc(cursor.x + (rand() - 0.5) * 12, cursor.y + (rand() - 0.5) * 12, 1.2 + rand() * 2, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
 const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   kandinsky,
   klee,
   pollock,
   picasso,
+  // Rothko is rendered directly by PaintEngine.renderRothkoField (its
+  // field-based technique doesn't fit the single-point StrokeContext
+  // shape); this entry exists only to satisfy the exhaustive style map and
+  // is never invoked in normal operation.
+  rothko: renoir,
+  renoir,
+  monet,
 };
 
 export function renderStroke(styleId: PaintStyleId, s: StrokeContext) {

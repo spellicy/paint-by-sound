@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SoundAnalyzer, type NoteEvent } from "../audio/analyzer";
 import type { NoteColor } from "../audio/pitchColor";
 import type { PaintPhase } from "../audio/phraseTracker";
 import { PaintEngine } from "../paint/PaintEngine";
 import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
+import { analyzeTheme, type ThemeInfluence } from "../theme/themeAnalyzer";
 
 export type SourceMode = "idle" | "file" | "mic";
 
@@ -24,6 +25,12 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
   const [styleId, setStyleIdState] = useState<PaintStyleId>("kandinsky");
   const [sourceMode, setSourceMode] = useState<SourceMode>("idle");
   const [trackName, setTrackName] = useState<string>("");
+  const [inspirationTitle, setInspirationTitle] = useState<string>("");
+  const [inspirationLyrics, setInspirationLyrics] = useState<string>("");
+  const inspirationTitleRef = useRef("");
+  useEffect(() => {
+    inspirationTitleRef.current = inspirationTitle;
+  }, [inspirationTitle]);
   const [status, setStatus] = useState<LiveStatus>({
     note: null,
     octave: null,
@@ -32,6 +39,15 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     phase: null,
   });
   const [error, setError] = useState<string | null>(null);
+
+  const themeInfluence = useMemo<ThemeInfluence>(
+    () => analyzeTheme(`${inspirationTitle} ${inspirationLyrics}`),
+    [inspirationTitle, inspirationLyrics],
+  );
+
+  useEffect(() => {
+    engineRef.current?.setTheme(themeInfluence);
+  }, [themeInfluence]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -78,7 +94,13 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
         const analyzer = ensureAnalyzer();
         unsubRef.current?.();
         unsubRef.current = analyzer.onNote((note) => engineRef.current?.paintNote(note));
-        setTrackName(file.name.replace(/\.[^/.]+$/, ""));
+        const name = file.name.replace(/\.[^/.]+$/, "");
+        setTrackName(name);
+        // Only auto-fill the inspiration title from the filename if the
+        // user hasn't typed their own -- don't clobber a title they set.
+        if (!inspirationTitleRef.current.trim()) {
+          setInspirationTitle(humanizeFilename(name));
+        }
         setSourceMode("file");
         await analyzer.playFile(file);
       } catch (e) {
@@ -145,5 +167,15 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     stop,
     clearCanvas,
     saveCurrentToGallery,
+    inspirationTitle,
+    setInspirationTitle,
+    inspirationLyrics,
+    setInspirationLyrics,
+    themeInfluence,
   };
+}
+
+/** "my_song-title_final" -> "my song title final" */
+function humanizeFilename(name: string): string {
+  return name.replace(/[_-]+/g, " ").trim();
 }
