@@ -41,7 +41,7 @@ between notes (no snapping to fixed steps), plus a slow palette drift over
 the piece and per-stroke jitter, so the same note never paints quite the
 same way twice.
 
-### Seven painters, seven different techniques
+### Ten painters, ten different techniques
 
 Each style isn't just a different brush shape on a shared engine — it has
 its own **composition strategy** (how the simulated arm moves and how much
@@ -58,10 +58,13 @@ one full-saturation rainbow applied uniformly to everyone:
 | Rothko | The canvas divided into a few large horizontal **color fields**; pitch register selects which field a note reinforces, building soft-edged, full-bleed bands | Deep maroon, burnt orange, plum, mustard — luminous through layering, not raw brightness |
 | Renoir | Full-canvas roam with fuller, rounder, warmer dabs | Warm pink, peach, gold, soft green — dappled garden light |
 | Monet | Full-canvas roam, short broken-color strokes with occasional complementary flecks nearby for shimmer | Soft blue, lavender, pale green, light pink, pale gold |
+| Cézanne | Constructive hatched planes across focal areas — small parallel rectangular strokes at one of a few fixed angles, patched together | Muted structured naturalism: blue, green, ochre, terracotta |
+| Dalí | **Sparse** — most notes are skipped so the arm places only a few, well-separated forms across a mostly empty canvas, each a smooth melting droop with a long cast shadow | Warm desert sand and rust against a stark dream-sky blue |
+| Van Gogh | **Swirl** — a persistent, slowly-drifting curl (not random jitter) produces extended spiraling loops, like the sky in *Starry Night*; thick layered impasto strokes follow the arm's direction of travel | Bold complementary contrast: gold/yellow against deep blue, with a hot orange accent |
 
-The gestural/geometric family (Kandinsky, Klee, Picasso, Pollock) is also
-phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads
-the arc of the music (loudness trend, onset density, how sustained or
+The gestural/geometric family (Kandinsky, Klee, Picasso, Pollock, Cézanne) is
+also phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which
+reads the arc of the music (loudness trend, onset density, how sustained or
 percussive things are) and puts the engine into one of four phases:
 
 - **Wash** — at the start, and again on major dynamic shifts, a soft
@@ -73,9 +76,9 @@ percussive things are) and puts the engine into one of four phases:
   accent brush style different from the base one, for percussive emphasis.
 - **Composing** — the default per-note stroke behavior.
 
-Rothko, Renoir and Monet paint continuously in their own technique
-regardless of phase (that's how those painters actually worked), with
-loudness and onset density modulating intensity and size rather than
+Rothko, Renoir, Monet, Dalí, and Van Gogh paint continuously in their own
+technique regardless of phase (that's how those painters actually worked),
+with loudness and onset density modulating intensity and size rather than
 switching modes.
 
 ### Inspiration: title and lyrics

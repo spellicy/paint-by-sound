@@ -162,6 +162,102 @@ const monet: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
+const CEZANNE_ANGLES = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4];
+
+const cezanne: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // The "constructive stroke": small parallel rectangular hatches at one of
+  // a handful of fixed angles, several per patch -- planes built up from
+  // repeated directional marks rather than outlines or blended fills.
+  const angle = CEZANNE_ANGLES[Math.floor(rand() * CEZANNE_ANGLES.length)];
+  const count = 3 + Math.floor(rand() * 3);
+  const len = 8 + note.amplitude * 22;
+  const w = 2 + note.amplitude * 3;
+  ctx.save();
+  ctx.translate(cursor.x, cursor.y);
+  ctx.rotate(angle + (rand() - 0.5) * 0.08);
+  for (let i = 0; i < count; i++) {
+    const offset = (i - (count - 1) / 2) * (w + 1.5);
+    ctx.fillStyle = color.rgba(0.5 + rand() * 0.35);
+    ctx.fillRect(-len / 2, offset - w / 2, len, w);
+  }
+  ctx.restore();
+};
+
+const dali: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // A smooth, softly-shaded droop -- evoking a melting form -- with a
+  // long, faint cast shadow. Precise and isolated rather than textured or
+  // overlapping, the way Dali rendered a few uncanny objects with great
+  // technical finish against a mostly empty landscape.
+  const w = 16 + note.amplitude * 44;
+  const droop = 26 + note.amplitude * 64 + rand() * 18;
+  ctx.save();
+  ctx.translate(cursor.x, cursor.y);
+
+  const shadowAngle = -0.35 + rand() * 0.2;
+  ctx.fillStyle = `hsla(${color.hue.toFixed(1)}, 12%, 10%, 0.22)`;
+  ctx.beginPath();
+  ctx.ellipse(
+    Math.cos(shadowAngle) * w * 1.4,
+    droop * 0.35,
+    w * 1.9,
+    w * 0.22,
+    shadowAngle,
+    0,
+    TAU,
+  );
+  ctx.fill();
+
+  const grad = ctx.createLinearGradient(0, -w / 2, 0, droop);
+  grad.addColorStop(0, color.rgba(0.92));
+  grad.addColorStop(
+    1,
+    `hsla(${color.hue.toFixed(1)}, ${color.saturation.toFixed(0)}%, ${Math.max(8, color.lightness - 26).toFixed(0)}%, 0.88)`,
+  );
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, 0);
+  ctx.quadraticCurveTo(-w / 2, w * 0.6, 0, droop);
+  ctx.quadraticCurveTo(w / 2, w * 0.6, w / 2, 0);
+  ctx.quadraticCurveTo(w / 2, -w * 0.55, 0, -w * 0.6);
+  ctx.quadraticCurveTo(-w / 2, -w * 0.55, -w / 2, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+};
+
+const vangogh: StyleRenderer = ({ ctx, cursor, note, color, rand, heading }) => {
+  // Thick, curved impasto strokes laid tangent to the arm's direction of
+  // travel -- several offset copies build visible ridges of paint, the way
+  // Van Gogh's short, loaded strokes read as physical texture rather than
+  // flat color. An occasional hot complementary fleck echoes his contrast.
+  const dir = heading ?? rand() * TAU;
+  const len = 10 + note.amplitude * 26;
+  const curve = (rand() - 0.5) * len * 0.9;
+  const layers = 2 + Math.floor(rand() * 2);
+
+  ctx.save();
+  ctx.translate(cursor.x, cursor.y);
+  ctx.rotate(dir);
+  ctx.lineCap = "round";
+  for (let i = 0; i < layers; i++) {
+    const off = (i - (layers - 1) / 2) * (1.5 + note.amplitude * 1.5);
+    ctx.strokeStyle = color.rgba(0.5 + rand() * 0.4);
+    ctx.lineWidth = 1.5 + note.amplitude * 4 - i * 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-len / 2, off);
+    ctx.quadraticCurveTo(0, off + curve, len / 2, off);
+    ctx.stroke();
+  }
+  if (rand() < 0.25) {
+    const compHue = (color.hue + 180) % 360;
+    ctx.fillStyle = `hsla(${compHue.toFixed(1)}, ${Math.min(95, color.saturation + 10).toFixed(0)}%, ${color.lightness.toFixed(0)}%, 0.5)`;
+    ctx.beginPath();
+    ctx.arc(len * 0.3, curve * 0.4, 1.5 + note.amplitude * 2, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
 const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   kandinsky,
   klee,
@@ -174,6 +270,9 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   rothko: renoir,
   renoir,
   monet,
+  cezanne,
+  dali,
+  vangogh,
 };
 
 export function renderStroke(styleId: PaintStyleId, s: StrokeContext) {

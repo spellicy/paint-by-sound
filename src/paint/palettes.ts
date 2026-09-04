@@ -76,6 +76,30 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [26, 52],
     lightness: [58, 82],
   },
+  cezanne: {
+    // Muted, structured naturalism: blues, greens, ochre, terracotta --
+    // color built from observed planes, not expressive invention.
+    signatureHues: [205, 140, 35, 15],
+    huePull: 0.55,
+    saturation: [22, 48],
+    lightness: [32, 58],
+  },
+  dali: {
+    // Warm desert sand and rust against a stark dream-sky blue -- a barren
+    // palette with sharp, isolated color rather than continuous coverage.
+    signatureHues: [38, 195, 15],
+    huePull: 0.55,
+    saturation: [30, 62],
+    lightness: [30, 68],
+  },
+  vangogh: {
+    // Bold complementary contrast -- gold/yellow against deep blue/indigo,
+    // with a hot orange accent. High-key and vivid, like Starry Night.
+    signatureHues: [50, 222, 25],
+    huePull: 0.3,
+    saturation: [55, 92],
+    lightness: [35, 65],
+  },
 };
 
 function hueDistanceSigned(from: number, to: number): number {

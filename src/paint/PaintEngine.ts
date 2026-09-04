@@ -7,6 +7,8 @@ import {
   ALL_OVER_STYLES,
   FIELD_STYLES,
   IMPRESSION_STYLES,
+  SPARSE_STYLES,
+  SWIRL_STYLES,
   type ArmCursor,
   type PaintStyleId,
 } from "./types";
@@ -24,7 +26,7 @@ function mulberry32(seed: number) {
   };
 }
 
-const ACCENT_STYLES: PaintStyleId[] = ["kandinsky", "klee", "pollock", "picasso"];
+const ACCENT_STYLES: PaintStyleId[] = ["kandinsky", "klee", "pollock", "picasso", "cezanne"];
 
 const NEUTRAL_THEME: ThemeInfluence = {
   warmth: 0,
@@ -54,6 +56,8 @@ export class PaintEngine {
   private focal: ArmCursor;
   private nextFocalShiftAt = 5;
   private roamHeading: number;
+  private swirlHeading: number;
+  private swirlCurl = 0;
   private rothkoBands: RothkoBand[] = [];
   private rand: () => number;
   private phraseTracker = new PhraseTracker();
@@ -73,6 +77,7 @@ export class PaintEngine {
     this.focal = { ...this.cursor };
     this.rand = mulberry32(Date.now());
     this.roamHeading = this.rand() * Math.PI * 2;
+    this.swirlHeading = this.rand() * Math.PI * 2;
     this.onNoteRendered = opts.onNoteRendered;
   }
 
@@ -97,6 +102,8 @@ export class PaintEngine {
     this.focal = { ...this.cursor };
     this.nextFocalShiftAt = 5;
     this.roamHeading = this.rand() * Math.PI * 2;
+    this.swirlHeading = this.rand() * Math.PI * 2;
+    this.swirlCurl = 0;
     this.rothkoBands = [];
     this.phraseTracker.reset();
     this.lastWashAt = -Infinity;
@@ -185,6 +192,66 @@ export class PaintEngine {
     }
     this.cursor.x = nx;
     this.cursor.y = ny;
+  }
+
+  /** Van Gogh: a continuous curling sweep, like `updateRoamCursor` but with
+   * a persistent, slowly-drifting curl rate instead of random jitter --
+   * the arm holds a curve for a while before it drifts, producing extended
+   * spiraling loops (Starry Night's sky) rather than a jagged random walk. */
+  private updateSwirlCursor(frequency: number, amplitude: number) {
+    const { width, height } = this.canvas;
+    const turbulence = this.theme.turbulence;
+
+    this.swirlCurl = clamp(
+      this.swirlCurl + (this.rand() - 0.5) * 0.012 * (1 + turbulence),
+      -0.22,
+      0.22,
+    );
+    this.swirlHeading += this.swirlCurl;
+    if (frequency > 0) {
+      const midi = 69 + 12 * Math.log2(frequency / 440);
+      const norm = clamp((midi - 40) / 60, 0, 1);
+      this.swirlHeading += (norm - 0.5) * 0.04;
+    }
+
+    const step = 7 + amplitude * 26;
+    let nx = this.cursor.x + Math.cos(this.swirlHeading) * step;
+    let ny = this.cursor.y + Math.sin(this.swirlHeading) * step;
+
+    const minX = width * 0.04;
+    const maxX = width * 0.96;
+    const minY = height * 0.04;
+    const maxY = height * 0.96;
+    if (nx < minX || nx > maxX || ny < minY || ny > maxY) {
+      // Rather than a hard mirror bounce (which reads as a jagged, violent
+      // reversal), ease the heading back toward the canvas center -- the
+      // curve keeps flowing instead of snapping, so loops stay coherent
+      // even as the arm wanders near an edge.
+      const cx = width / 2;
+      const cy = height / 2;
+      const toCenter = Math.atan2(cy - ny, cx - nx);
+      this.swirlHeading = toCenter + (this.rand() - 0.5) * 0.6;
+      this.swirlCurl *= 0.4;
+      nx = clamp(nx, minX, maxX);
+      ny = clamp(ny, minY, maxY);
+    }
+    this.cursor.x = nx;
+    this.cursor.y = ny;
+  }
+
+  /** Dali: the arm jumps to a new, well-separated position across a mostly
+   * empty canvas -- a few precisely placed forms on a barren field, rather
+   * than continuous coverage. Combined with paintNote's onset-only gating,
+   * this keeps the composition sparse over a full track. */
+  private updateSparseCursor() {
+    const { width, height } = this.canvas;
+    const groundLevel = this.rand() < 0.25;
+    this.cursor = {
+      x: width * (0.08 + this.rand() * 0.84),
+      y: groundLevel
+        ? height * (0.62 + this.rand() * 0.32)
+        : height * (0.08 + this.rand() * 0.58),
+    };
   }
 
   /** Rothko: canvas divided into a few large horizontal fields; pitch
@@ -303,17 +370,28 @@ export class PaintEngine {
     const isAllOver = ALL_OVER_STYLES.includes(this.styleId);
     const isField = FIELD_STYLES.includes(this.styleId);
     const isImpression = IMPRESSION_STYLES.includes(this.styleId);
+    const isSwirl = SWIRL_STYLES.includes(this.styleId);
+    const isSparse = SPARSE_STYLES.includes(this.styleId);
+    // Dali: skip most notes entirely so forms stay few and well-separated
+    // across the canvas, rather than accumulating into continuous coverage.
+    const sparseSkip = isSparse && !(note.isOnset || this.rand() < 0.15);
 
     let rothkoBand: RothkoBand | null = null;
-    if (isAllOver) {
-      this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
-    } else if (isField) {
-      rothkoBand = this.updateRothkoCursor(note.frequency);
-    } else if (isImpression) {
-      const stepScale = this.styleId === "monet" ? 0.32 : 0.4;
-      this.updateRoamCursor(note.frequency, note.amplitude, stepScale, 1.9);
-    } else {
-      this.updateFocalCursor(note.frequency, phrase.energyFast, phrase.elapsed);
+    if (!sparseSkip) {
+      if (isAllOver) {
+        this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
+      } else if (isField) {
+        rothkoBand = this.updateRothkoCursor(note.frequency);
+      } else if (isImpression) {
+        const stepScale = this.styleId === "monet" ? 0.32 : 0.4;
+        this.updateRoamCursor(note.frequency, note.amplitude, stepScale, 1.9);
+      } else if (isSwirl) {
+        this.updateSwirlCursor(note.frequency, note.amplitude);
+      } else if (isSparse) {
+        this.updateSparseCursor();
+      } else {
+        this.updateFocalCursor(note.frequency, phrase.energyFast, phrase.elapsed);
+      }
     }
 
     // Slow palette drift over the piece, plus per-stroke jitter and the
@@ -336,44 +414,49 @@ export class PaintEngine {
       this.renderWash(phrase.elapsed, color);
     }
 
-    if (isField && rothkoBand) {
-      this.renderRothkoField(note, rothkoBand, color);
-    } else if (isImpression) {
-      renderStroke(this.styleId, {
-        ctx: this.ctx,
-        width: this.canvas.width,
-        height: this.canvas.height,
-        cursor: this.cursor,
-        note,
-        color,
-        rand: this.rand,
-      });
-    } else if (phrase.phase === "melodic") {
-      this.renderMelodicSegment(note, color);
-    } else {
-      this.lastMelodic = null;
+    if (!sparseSkip) {
+      if (isField && rothkoBand) {
+        this.renderRothkoField(note, rothkoBand, color);
+      } else if (isImpression || isSwirl || isSparse) {
+        // These families always paint in their own technique, regardless of
+        // musical phase -- that's how those painters actually worked.
+        renderStroke(this.styleId, {
+          ctx: this.ctx,
+          width: this.canvas.width,
+          height: this.canvas.height,
+          cursor: this.cursor,
+          note,
+          color,
+          rand: this.rand,
+          heading: isSwirl ? this.swirlHeading : undefined,
+        });
+      } else if (phrase.phase === "melodic") {
+        this.renderMelodicSegment(note, color);
+      } else {
+        this.lastMelodic = null;
 
-      let renderStyle = this.styleId;
-      if (phrase.phase === "rhythmic" && note.isOnset && this.rand() < 0.22) {
-        // An occasional accent in a different brush technique, for emphasis.
-        const others = ACCENT_STYLES.filter((s) => s !== this.styleId);
-        renderStyle = others[Math.floor(this.rand() * others.length)];
+        let renderStyle = this.styleId;
+        if (phrase.phase === "rhythmic" && note.isOnset && this.rand() < 0.22) {
+          // An occasional accent in a different brush technique, for emphasis.
+          const others = ACCENT_STYLES.filter((s) => s !== this.styleId);
+          renderStyle = others[Math.floor(this.rand() * others.length)];
+        }
+
+        const boosted =
+          phrase.phase === "rhythmic"
+            ? { ...note, amplitude: Math.min(1, note.amplitude * 1.35) }
+            : note;
+
+        renderStroke(renderStyle, {
+          ctx: this.ctx,
+          width: this.canvas.width,
+          height: this.canvas.height,
+          cursor: this.cursor,
+          note: boosted,
+          color,
+          rand: this.rand,
+        });
       }
-
-      const boosted =
-        phrase.phase === "rhythmic"
-          ? { ...note, amplitude: Math.min(1, note.amplitude * 1.35) }
-          : note;
-
-      renderStroke(renderStyle, {
-        ctx: this.ctx,
-        width: this.canvas.width,
-        height: this.canvas.height,
-        cursor: this.cursor,
-        note: boosted,
-        color,
-        rand: this.rand,
-      });
     }
 
     this.onNoteRendered?.(color, note, phrase.phase);
