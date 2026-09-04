@@ -74,19 +74,15 @@ export class SoundAnalyzer {
   async startMic(): Promise<void> {
     this.stop();
     await this.ctx.resume();
-    // Disabling audio processing constraints, rather than a bare `audio: true`,
-    // steers iOS Safari toward a less intrusive AVAudioSession category --
-    // it doesn't reliably stop iOS from pausing background audio (Apple
-    // Music, Spotify, etc.) when the mic activates, since websites have no
-    // API for the "mix with others" session mode native apps can request,
-    // but it measurably helps on some iOS/WebKit versions.
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-      },
-    });
+    // Plain `audio: true` rather than overriding the processing constraints:
+    // disabling autoGainControl was tried as a mitigation for iOS pausing
+    // other apps' audio on mic activation, but it doesn't reliably help with
+    // that (websites have no API for the "mix with others" AVAudioSession
+    // category native apps can request) while it does reliably leave the
+    // iPhone mic too quiet to pick up ambient/speaker audio, reading as
+    // silence below the analyzer's noise gate and leaving the canvas blank
+    // even with permission granted and audio playing nearby.
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const src = this.ctx.createMediaStreamSource(stream);
     src.connect(this.analyser);
     // Intentionally not connected to destination -- avoid feedback.
