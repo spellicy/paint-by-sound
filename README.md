@@ -144,23 +144,6 @@ technique explicitly has no fixed subject (that's the whole point of
 Pollock), so it opts out of shape bias entirely and only picks up the
 subject's palette lean, the same as an untitled piece would.
 
-Beyond landscapes, the same mechanism paints literal subjects: name *a
-cat*, *a person*, *a tree*, *a boat*, and a small library of parametric
-silhouettes (`src/paint/silhouettes.ts`) -- each built from a handful of
-simple shapes, an ellipse body, a circle head, a couple of triangle ears --
-gets sampled into hundreds of points along its outline and scattered
-through its interior, then handed to the selected painter's *own* stroke
-renderer exactly like the landscape primitives are. The abstraction is
-entirely in how a painter's technique marks down those points: the same
-cat comes out as soft impressionist dabs through Monet, looping impasto
-through Van Gogh, or a jumbled, barely-legible cluster of fragmented planes
-through Picasso -- which is, per the concept this app is modeling, roughly
-how Picasso *would* paint a cat. Because it's driven by geometry and each
-painter's existing `renderStroke` implementation rather than any
-painter-specific drawing code, a new painter added to the roster gets this
-for free. The library ships with people, cats, dogs, birds, trees, houses,
-flowers, boats, cars, stars, and hearts, and is meant to keep growing.
-
 Finished paintings can be saved to an in-browser **exhibit catalog**
 (`localStorage`), each tagged with track name, style, and date — a small
 nod to the gallery catalog described in the original concept. Each piece can
@@ -190,13 +173,12 @@ src/
   audio/phraseTracker.ts  musical phase detection (wash/melodic/rhythmic/composing)
   audio/keyDetector.ts    rolling pitch-class histogram -> major/minor key estimate
   theme/lexicon.ts        mood-word -> warmth/luminosity/turbulence lookup
-  theme/subjects.ts       subject-word -> landscape primitive/figure lookup
+  theme/subjects.ts       subject-word -> abstract shape primitives lookup
   theme/themeAnalyzer.ts  reads a title/lyrics into a ThemeInfluence
   paint/PaintEngine.ts    per-style composition strategy + stroke dispatch
   paint/palettes.ts       each painter's signature color palette
   paint/styles.ts         the per-note brush-style renderers
-  paint/motifs.ts         subject primitive/figure -> canvas anchor points
-  paint/silhouettes.ts    parametric literal-subject library (cat, person, tree, ...)
+  paint/motifs.ts         subject primitive -> canvas anchor points
   gallery/storage.ts      localStorage-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
