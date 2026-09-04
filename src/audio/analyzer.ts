@@ -48,9 +48,17 @@ export class SoundAnalyzer {
 
   async playFile(file: File): Promise<{ duration: number }> {
     this.stop();
+    // Resume before the async file-read/decode gap, not after -- on mobile
+    // Safari the AudioContext can drop back to "suspended" while the native
+    // file picker has focus, and resume() needs to run as close to the
+    // triggering user gesture as possible or it silently no-ops, leaving the
+    // source playing into a suspended context (no analyser data, no errors).
+    await this.ctx.resume();
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-    await this.ctx.resume();
+    // Decoding can take a while for a large file; re-resume in case the
+    // context suspended again during that gap.
+    if (this.ctx.state !== "running") await this.ctx.resume();
 
     const src = this.ctx.createBufferSource();
     src.buffer = audioBuffer;
