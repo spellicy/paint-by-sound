@@ -1,5 +1,6 @@
 import type { ThemeInfluence } from "../theme/themeAnalyzer";
 import { PAINT_STYLES } from "../paint/types";
+import { MOTIF_LABELS } from "../theme/subjects";
 
 interface InspirationPanelProps {
   title: string;
@@ -27,7 +28,9 @@ export function InspirationPanel({
       <p className="text-xs text-stone-500">
         The title and any key lyrics or mood words shape the palette and
         composition, the way a painter might take a cue from a title before
-        starting a canvas.
+        starting a canvas. Naming a subject or place -- seaside, mountains,
+        a city skyline -- blocks in an abstract underlying shape too, in
+        whichever painter's style you've picked.
       </p>
       <div>
         <label className="mb-1 block text-xs text-stone-500">Title</label>
@@ -63,6 +66,23 @@ export function InspirationPanel({
           {theme.suggestedStyle && (
             <span className="ml-1 text-[10px] text-stone-500">
               &rarr; leans {styleLabel(theme.suggestedStyle)}
+            </span>
+          )}
+        </div>
+      )}
+      {theme.matchedSubjects.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          {theme.matchedSubjects.map((w, i) => (
+            <span
+              key={`${w}-${i}`}
+              className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] text-sky-300"
+            >
+              {w}
+            </span>
+          ))}
+          {theme.motifs.length > 0 && (
+            <span className="ml-1 text-[10px] text-stone-500">
+              &rarr; blocks in {theme.motifs.map((m) => MOTIF_LABELS[m]).join(", ")}
             </span>
           )}
         </div>

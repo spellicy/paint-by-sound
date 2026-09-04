@@ -3,6 +3,7 @@ import { frequencyToNoteColor, type NoteColor } from "../audio/pitchColor";
 import { PhraseTracker, type PaintPhase } from "../audio/phraseTracker";
 import { stylizeColor } from "./palettes";
 import { renderStroke } from "./styles";
+import { generateMotifMarks } from "./motifs";
 import {
   ALL_OVER_STYLES,
   FIELD_STYLES,
@@ -13,6 +14,25 @@ import {
   type PaintStyleId,
 } from "./types";
 import type { ThemeInfluence } from "../theme/themeAnalyzer";
+
+/** A subject-motif mark carries its own explicit hue rather than one derived
+ * from a detected pitch, so it needs a hand-built NoteColor rather than one
+ * from `frequencyToNoteColor`. `pitchClass`/`noteName`/`octave` are unused by
+ * the renderers and palette code that consume it -- only hue/saturation/
+ * lightness/rgb/rgba matter -- so they're filled with harmless placeholders. */
+function makeRawColor(hue: number, saturation: number, lightness: number): NoteColor {
+  return {
+    pitchClass: 0,
+    noteName: "C",
+    octave: 4,
+    hue,
+    saturation,
+    lightness,
+    rgb: `hsl(${hue.toFixed(1)}, ${saturation.toFixed(0)}%, ${lightness.toFixed(0)}%)`,
+    rgba: (alpha: number) =>
+      `hsla(${hue.toFixed(1)}, ${saturation.toFixed(0)}%, ${lightness.toFixed(0)}%, ${alpha})`,
+  };
+}
 
 /** Seeded PRNG (mulberry32) so a given track+style repaints deterministically. */
 function mulberry32(seed: number) {
@@ -35,6 +55,9 @@ const NEUTRAL_THEME: ThemeInfluence = {
   hueRotation: 0,
   matchedWords: [],
   suggestedStyle: null,
+  motifs: [],
+  motifStrength: 0,
+  matchedSubjects: [],
 };
 
 interface RothkoBand {
@@ -63,6 +86,8 @@ export class PaintEngine {
   private phraseTracker = new PhraseTracker();
   private lastWashAt = -Infinity;
   private lastMelodic: { x: number; y: number; time: number } | null = null;
+  private motifPainted = false;
+  private motifAnchors: { x: number; y: number }[] = [];
   private theme: ThemeInfluence = NEUTRAL_THEME;
   styleId: PaintStyleId;
   private onNoteRendered?: (color: NoteColor, note: NoteEvent, phase: PaintPhase) => void;
@@ -84,6 +109,10 @@ export class PaintEngine {
   setStyle(styleId: PaintStyleId) {
     this.styleId = styleId;
     this.rothkoBands = [];
+    // Pollock's all-over technique explicitly has no fixed subject area
+    // (see ALL_OVER_STYLES) -- drop any subject bias picked up under a
+    // previous style so switching to Pollock mid-piece stays true to that.
+    if (ALL_OVER_STYLES.includes(styleId)) this.motifAnchors = [];
   }
 
   /** Set the track's thematic influence (from title/lyrics analysis). */
@@ -108,6 +137,34 @@ export class PaintEngine {
     this.phraseTracker.reset();
     this.lastWashAt = -Infinity;
     this.lastMelodic = null;
+    this.motifPainted = false;
+    this.motifAnchors = [];
+  }
+
+  private nearestMotifAnchor(x: number, y: number): { x: number; y: number } | null {
+    if (!this.motifAnchors.length) return null;
+    let best = this.motifAnchors[0];
+    let bestDist = Infinity;
+    for (const a of this.motifAnchors) {
+      const d = (a.x - x) ** 2 + (a.y - y) ** 2;
+      if (d < bestDist) {
+        bestDist = d;
+        best = a;
+      }
+    }
+    return best;
+  }
+
+  /** Nudge a candidate position toward the nearest subject-motif anchor, so
+   * the shape a subject implies keeps quietly reasserting itself over a
+   * full piece instead of only showing at the very start, before it gets
+   * painted over by everything that follows. `weight` 0 leaves the point
+   * untouched; both callers scale it by the theme's motifStrength so an
+   * unnamed or weakly-matched subject barely nudges anything. */
+  private biasTowardMotif(x: number, y: number, weight: number): { x: number; y: number } {
+    const best = this.nearestMotifAnchor(x, y);
+    if (!best || weight <= 0) return { x, y };
+    return { x: x + (best.x - x) * weight, y: y + (best.y - y) * weight };
   }
 
   // ---------------------------------------------------------------------
@@ -152,8 +209,9 @@ export class PaintEngine {
     const spread = (0.07 + energyFast * 0.3) * (0.7 + this.theme.turbulence * 0.6);
     this.cursor.x += (this.focal.x - this.cursor.x) * 0.07 + (this.rand() - 0.5) * width * spread;
 
-    this.cursor.x = clamp(this.cursor.x, width * 0.03, width * 0.97);
-    this.cursor.y = clamp(this.cursor.y, height * 0.03, height * 0.97);
+    const biased = this.biasTowardMotif(this.cursor.x, this.cursor.y, this.theme.motifStrength * 0.08);
+    this.cursor.x = clamp(biased.x, width * 0.03, width * 0.97);
+    this.cursor.y = clamp(biased.y, height * 0.03, height * 0.97);
   }
 
   /** Pollock: a continuous gestural sweep that roams and bounces across the
@@ -174,9 +232,29 @@ export class PaintEngine {
       this.roamHeading += (norm - 0.5) * 0.08;
     }
 
+    // A subject's shape keeps quietly reasserting itself over a full roam
+    // (empty for Pollock -- see setStyle -- so this is a no-op there). A
+    // pure post-hoc position nudge is too weak against this heading's own
+    // random drift, so steer the heading itself toward the nearest anchor
+    // -- a gentle "gravity" on direction that still leaves plenty of room
+    // for the random walk, rather than snapping the resulting position.
+    const target = this.nearestMotifAnchor(this.cursor.x, this.cursor.y);
+    if (target) {
+      const desired = Math.atan2(target.y - this.cursor.y, target.x - this.cursor.x);
+      const diff = Math.atan2(
+        Math.sin(desired - this.roamHeading),
+        Math.cos(desired - this.roamHeading),
+      );
+      this.roamHeading += diff * this.theme.motifStrength * 0.22;
+    }
+
     const step = (16 + amplitude * 100) * stepScale;
     let nx = this.cursor.x + Math.cos(this.roamHeading) * step;
     let ny = this.cursor.y + Math.sin(this.roamHeading) * step;
+
+    const biased = this.biasTowardMotif(nx, ny, this.theme.motifStrength * 0.2);
+    nx = biased.x;
+    ny = biased.y;
 
     const minX = width * 0.03;
     const maxX = width * 0.97;
@@ -218,6 +296,12 @@ export class PaintEngine {
     let nx = this.cursor.x + Math.cos(this.swirlHeading) * step;
     let ny = this.cursor.y + Math.sin(this.swirlHeading) * step;
 
+    // A light touch here -- too strong a pull fights the curl and breaks
+    // the loops up into jagged corrections instead of coherent spirals.
+    const biased = this.biasTowardMotif(nx, ny, this.theme.motifStrength * 0.04);
+    nx = biased.x;
+    ny = biased.y;
+
     const minX = width * 0.04;
     const maxX = width * 0.96;
     const minY = height * 0.04;
@@ -245,6 +329,20 @@ export class PaintEngine {
    * this keeps the composition sparse over a full track. */
   private updateSparseCursor() {
     const { width, height } = this.canvas;
+    // A named subject still reads as only a few, well-separated forms, not
+    // continuous coverage -- so instead of a continuous positional bias
+    // (which would fight the "jump to a new spot" character), occasionally
+    // let one of those few forms land squarely on the subject's shape, the
+    // way Dali placed a handful of uncanny objects within an evocative
+    // landscape.
+    if (this.motifAnchors.length && this.rand() < this.theme.motifStrength * 0.6) {
+      const a = this.motifAnchors[Math.floor(this.rand() * this.motifAnchors.length)];
+      this.cursor = {
+        x: clamp(a.x + (this.rand() - 0.5) * width * 0.06, width * 0.02, width * 0.98),
+        y: clamp(a.y + (this.rand() - 0.5) * height * 0.06, height * 0.02, height * 0.98),
+      };
+      return;
+    }
     const groundLevel = this.rand() < 0.25;
     this.cursor = {
       x: width * (0.08 + this.rand() * 0.84),
@@ -365,6 +463,71 @@ export class PaintEngine {
     this.ctx.restore();
   }
 
+  /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
+   * waves) gets blocked in once, early in the piece, in the current
+   * painter's own hand -- the same points handed to Rothko become a color-
+   * field band, to Monet a row of broken-color dabs, to Van Gogh a line of
+   * impasto strokes. This only ever lays a loose underlying composition;
+   * the music-driven painting in paintNote continues over it exactly as
+   * before. Pollock's all-over technique explicitly rejects a fixed
+   * subject (see ALL_OVER_STYLES), so it's skipped there on purpose -- the
+   * subject still leans the palette via the existing warmth/hueRotation
+   * channels, just never an explicit shape. */
+  private paintMotifUnderlay() {
+    if (this.motifPainted) return;
+    this.motifPainted = true;
+    if (ALL_OVER_STYLES.includes(this.styleId)) return;
+
+    const { motifs, motifStrength, warmth } = this.theme;
+    if (!motifs.length || motifStrength <= 0) return;
+
+    let marks = generateMotifMarks(motifs, this.canvas.width, this.canvas.height, this.rand, warmth);
+    // The full point cloud (before any thinning below) is what later
+    // cursor updates gently bias toward, so the shape keeps reasserting
+    // itself over the whole piece instead of only at the very start.
+    this.motifAnchors = marks.map((m) => ({ x: m.x, y: m.y }));
+    if (SPARSE_STYLES.includes(this.styleId)) {
+      // Dali: a subject still reads as only a few, well-separated forms,
+      // never continuous coverage -- thin the mark set to match.
+      marks = marks.filter((_, i) => i % 4 === 0);
+    }
+
+    const isField = FIELD_STYLES.includes(this.styleId);
+    if (isField) this.ensureRothkoBands();
+    const isSwirl = SWIRL_STYLES.includes(this.styleId);
+
+    for (const mark of marks) {
+      const rawColor = makeRawColor(
+        (mark.hue + (this.rand() - 0.5) * 10 + 360) % 360,
+        48 + this.rand() * 12,
+        45 + this.rand() * 10,
+      );
+      const color = stylizeColor(rawColor, this.styleId, this.theme);
+      const amplitude = Math.min(1, mark.amplitude * (0.6 + motifStrength * 0.5));
+      const note: NoteEvent = { time: 0, frequency: 0, amplitude, brightness: 0.5, isOnset: mark.onset };
+      this.cursor.x = mark.x;
+      this.cursor.y = mark.y;
+
+      if (isField) {
+        const band =
+          this.rothkoBands.find((b) => mark.y >= b.yStart && mark.y <= b.yEnd) ??
+          this.rothkoBands[1];
+        this.renderRothkoField(note, band, color);
+      } else {
+        renderStroke(this.styleId, {
+          ctx: this.ctx,
+          width: this.canvas.width,
+          height: this.canvas.height,
+          cursor: this.cursor,
+          note,
+          color,
+          rand: this.rand,
+          heading: isSwirl ? (mark.heading ?? this.swirlHeading) : mark.heading,
+        });
+      }
+    }
+  }
+
   paintNote(note: NoteEvent) {
     const phrase = this.phraseTracker.update(note);
     const isAllOver = ALL_OVER_STYLES.includes(this.styleId);
@@ -412,6 +575,9 @@ export class PaintEngine {
       (phrase.sectionChange && phrase.elapsed - this.lastWashAt > 4);
     if (dueForWash && phrase.elapsed - this.lastWashAt > 1.8) {
       this.renderWash(phrase.elapsed, color);
+    }
+    if (phrase.phase === "wash") {
+      this.paintMotifUnderlay();
     }
 
     if (!sparseSkip) {

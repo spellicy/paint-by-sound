@@ -94,6 +94,22 @@ no server call, and even words outside the lexicon still shift the palette via
 a deterministic hash of the text, so every title leaves *some* mark on the
 piece (`src/theme/themeAnalyzer.ts`).
 
+Naming an actual subject or place — *seaside*, *mountains*, *a city
+skyline*, *starry night* — goes a step further: a separate curated lexicon
+(`src/theme/subjects.ts`) reads it into a handful of abstract visual
+primitives (a horizon line, a ridge of peaks, a stand of verticals, a
+sun/moon disc, a spiral...) and the paint engine blocks those in early in
+the piece, and keeps quietly nudging the composition back toward them for
+the rest of it, in the *current painter's own hand* — the same "seaside"
+horizon comes out as a Rothko color-field band, a row of Monet broken-color
+dabs, or a line of Van Gogh impasto, never as separate representational
+drawing code (`PaintEngine.paintMotifUnderlay`, `src/paint/motifs.ts`). It's
+a bias, not a template: the music-driven painting in `paintNote` keeps
+running exactly as before, layered on top. Pollock's genuinely all-over
+technique explicitly has no fixed subject (that's the whole point of
+Pollock), so it opts out of shape bias entirely and only picks up the
+subject's palette lean, the same as an untitled piece would.
+
 Finished paintings can be saved to an in-browser **exhibit catalog**
 (`localStorage`), each tagged with track name, style, and date — a small
 nod to the gallery catalog described in the original concept. Each piece can
@@ -122,10 +138,12 @@ src/
   audio/pitchColor.ts     note -> synesthetic color mapping (continuous hue)
   audio/phraseTracker.ts  musical phase detection (wash/melodic/rhythmic/composing)
   theme/lexicon.ts        mood-word -> warmth/luminosity/turbulence lookup
+  theme/subjects.ts       subject-word -> abstract shape primitives lookup
   theme/themeAnalyzer.ts  reads a title/lyrics into a ThemeInfluence
   paint/PaintEngine.ts    per-style composition strategy + stroke dispatch
   paint/palettes.ts       each painter's signature color palette
   paint/styles.ts         the per-note brush-style renderers
+  paint/motifs.ts         subject primitive -> canvas anchor points
   gallery/storage.ts      localStorage-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state

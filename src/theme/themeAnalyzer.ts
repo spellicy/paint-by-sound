@@ -1,4 +1,5 @@
 import { MOOD_LEXICON } from "./lexicon";
+import { resolveMotifs, type MotifPrimitive } from "./subjects";
 import type { PaintStyleId } from "../paint/types";
 
 export interface ThemeInfluence {
@@ -17,6 +18,15 @@ export interface ThemeInfluence {
   /** A gentle style suggestion from the strongest lexicon match -- never
    * applied automatically, just offered. */
   suggestedStyle: PaintStyleId | null;
+  /** Abstract landscape/scene primitives read from a subject word (e.g.
+   * "seaside" -> horizon + waves) -- biases where and what shape the
+   * current painter's own brushwork trends toward early in a piece,
+   * layered under (not replacing) the music-driven painting that follows. */
+  motifs: MotifPrimitive[];
+  /** 0..1 how strongly the subject should assert its shape. */
+  motifStrength: number;
+  /** Subject words from the lexicon that were actually found, for the UI. */
+  matchedSubjects: string[];
 }
 
 const NEUTRAL: ThemeInfluence = {
@@ -26,6 +36,9 @@ const NEUTRAL: ThemeInfluence = {
   hueRotation: 0,
   matchedWords: [],
   suggestedStyle: null,
+  motifs: [],
+  motifStrength: 0,
+  matchedSubjects: [],
 };
 
 /** Small stable string hash (djb2) -- deterministic, no dependencies. */
@@ -56,9 +69,11 @@ export function analyzeTheme(text: string): ThemeInfluence {
   }
 
   const hueRotation = hashString(trimmed.toLowerCase()) % 360;
+  const { primitives: motifs, strength: motifStrength, matched: matchedSubjects } =
+    resolveMotifs(words);
 
   if (matches.length === 0) {
-    return { ...NEUTRAL, hueRotation };
+    return { ...NEUTRAL, hueRotation, motifs, motifStrength, matchedSubjects };
   }
 
   const n = matches.length;
@@ -90,6 +105,9 @@ export function analyzeTheme(text: string): ThemeInfluence {
     hueRotation,
     matchedWords: matches.map((m) => m.word),
     suggestedStyle,
+    motifs,
+    motifStrength,
+    matchedSubjects,
   };
 }
 
