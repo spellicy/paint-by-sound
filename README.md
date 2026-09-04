@@ -12,11 +12,16 @@ This app stands in for the physical installation. It listens to whatever
 audio you play, analyzes it in real time, and drives a virtual brush across
 a canvas the same way the concept's robotic arm would drive a real one.
 
-On a phone, the intended flow is **Listen live**: play music in Spotify,
-Apple Music, YouTube, or any other app, tap "Listen live," allow microphone
-access, and painting starts the instant it hears sound — no separate "start
-painting" step. Uploading an MP3/WAV file directly is the alternative for
-a specific track file.
+**Listen live** turns on the microphone and paints whatever it hears out
+loud nearby — a speaker, another device, the room — starting the instant it
+hears sound, no separate "start painting" step. On iPhone specifically,
+activating the microphone makes iOS pause audio playing in *other* apps
+(Apple Music, Spotify, etc.) — a platform restriction, not something a
+website can override — so Listen Live can't hear a track playing on the
+*same* phone. Play the track through a separate speaker or device for this
+phone to listen to, or use **Upload a file** instead, which plays an
+MP3/WAV directly and works reliably on a single device with no microphone
+involved.
 
 ## How it listens
 
@@ -131,6 +136,10 @@ src/
   any single note.
 - Everything is local to the browser — no backend, no accounts, no audio
   ever leaves the machine it's played on.
+- On iPhone, Safari pauses other apps' audio the moment a page activates the
+  microphone (an iOS platform restriction with no web API workaround), so
+  **Listen live** can't hear music playing in another app on the same
+  device — use a separate speaker/device, or **Upload a file** instead.
 - This is a software concept demo, not a control system for physical
   hardware; adapting the same `NoteEvent` stream to drive an actual robotic
   arm would replace `PaintEngine` with a motion-control client.
