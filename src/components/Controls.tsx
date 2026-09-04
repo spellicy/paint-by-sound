@@ -33,6 +33,16 @@ export function Controls({
           Sound source
         </h3>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={onStartMic}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              sourceMode === "mic"
+                ? "bg-amber-600 text-stone-950"
+                : "bg-amber-600/90 text-stone-950 hover:bg-amber-500"
+            }`}
+          >
+            Listen live
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -46,19 +56,9 @@ export function Controls({
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-stone-950 hover:bg-amber-500"
+            className="rounded-md bg-stone-800 px-3 py-1.5 text-sm font-medium text-stone-200 hover:bg-stone-700"
           >
-            Upload audio
-          </button>
-          <button
-            onClick={onStartMic}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              sourceMode === "mic"
-                ? "bg-amber-600 text-stone-950"
-                : "bg-stone-800 text-stone-200 hover:bg-stone-700"
-            }`}
-          >
-            Use microphone
+            Upload a file
           </button>
           {sourceMode !== "idle" && (
             <button
@@ -69,6 +69,12 @@ export function Controls({
             </button>
           )}
         </div>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">
+          On a phone, play music in Spotify, Apple Music, YouTube, or any
+          other app, then tap <strong className="text-stone-400">Listen live</strong> and
+          allow microphone access &mdash; painting starts the moment it hears
+          sound. &ldquo;Upload a file&rdquo; plays an MP3/WAV directly instead.
+        </p>
       </div>
 
       <div>

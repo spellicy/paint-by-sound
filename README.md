@@ -9,9 +9,14 @@ modern-art canvases live, guided entirely by music — pitch mapped to color,
 loudness and timbre mapped to brushstroke and gesture.
 
 This app stands in for the physical installation. It listens to whatever
-audio you play (an uploaded file or your microphone), analyzes it in real
-time, and drives a virtual brush across a canvas the same way the concept's
-robotic arm would drive a real one.
+audio you play, analyzes it in real time, and drives a virtual brush across
+a canvas the same way the concept's robotic arm would drive a real one.
+
+On a phone, the intended flow is **Listen live**: play music in Spotify,
+Apple Music, YouTube, or any other app, tap "Listen live," allow microphone
+access, and painting starts the instant it hears sound — no separate "start
+painting" step. Uploading an MP3/WAV file directly is the alternative for
+a specific track file.
 
 ## How it listens
 
@@ -83,7 +88,11 @@ piece (`src/theme/themeAnalyzer.ts`).
 
 Finished paintings can be saved to an in-browser **exhibit catalog**
 (`localStorage`), each tagged with track name, style, and date — a small
-nod to the gallery catalog described in the original concept.
+nod to the gallery catalog described in the original concept. Each piece can
+be deleted (a trash icon on the thumbnail, always visible — not hover-only,
+so it works on touch devices) or saved out via the Web Share API
+(`src/gallery/saveImage.ts`), which opens the native "Save Image" sheet on
+iOS/Android; browsers without share support fall back to a normal download.
 
 ## Running it
 
@@ -94,8 +103,8 @@ npm run build     # type-check + production build
 npm run preview   # serve the production build locally
 ```
 
-Open the app, upload an audio file (or grant microphone access), and pick a
-brush style. The canvas keeps painting for as long as audio plays.
+Open the app, tap "Listen live" (or "Upload a file"), pick a brush style,
+and play some music. The canvas keeps painting for as long as audio plays.
 
 ## Project layout
 
@@ -110,6 +119,7 @@ src/
   paint/palettes.ts       each painter's signature color palette
   paint/styles.ts         the per-note brush-style renderers
   gallery/storage.ts      localStorage-backed exhibit catalog
+  gallery/saveImage.ts    Web Share API save, with anchor-download fallback
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
   components/             Controls, StatusBar, ConceptPanel, InspirationPanel, Gallery
 ```
