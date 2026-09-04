@@ -36,12 +36,13 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [18, 42],
   },
   pollock: {
-    // Earthy umber and sienna with a rare cadmium-red accent; mostly
-    // desaturated and dark, the way enamel and house paint reads.
-    signatureHues: [32, 8],
-    huePull: 0.2,
-    saturation: [12, 55],
-    lightness: [14, 50],
+    // Enamel black, bone white, and earthy umber/sienna with a rare
+    // cadmium-red accent -- the poured-paint palette of the drip
+    // paintings, tightly held rather than ranging across the wheel.
+    signatureHues: [32, 8, 0],
+    huePull: 0.55,
+    saturation: [6, 30],
+    lightness: [10, 46],
   },
   dekooning: {
     // Flesh pink, cadmium red and yellow against black and white -- the

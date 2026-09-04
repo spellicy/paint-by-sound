@@ -9,33 +9,49 @@ const TAU = Math.PI * 2;
 const rothko: StyleRenderer = () => {};
 
 const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  const flingDistance = 10 + note.amplitude * 90;
-  const dropCount = note.isOnset ? 6 + Math.floor(note.amplitude * 10) : 2;
+  // A single dripped/flung filament -- a thin, looping, multi-segment
+  // thread laid down in one continuous gesture, tapering as it goes, the
+  // way paint trailed off a loaded stick or brush through the air. A
+  // single smooth arc reads as a deliberate brushstroke; the looping
+  // elbows here are what make it read as *flung* rather than painted.
+  const reach = 12 + note.amplitude * 70;
+  const segments = 2 + Math.floor(rand() * 2);
+  const flickCount = note.isOnset ? 3 + Math.floor(note.amplitude * 6) : 1;
 
   ctx.save();
-  ctx.strokeStyle = color.rgba(0.7);
-  ctx.lineWidth = 0.6 + note.amplitude * 2.2;
+  ctx.strokeStyle = color.rgba(0.6 + rand() * 0.2);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(cursor.x, cursor.y);
-  const angle = rand() * TAU;
-  const endX = cursor.x + Math.cos(angle) * flingDistance;
-  const endY = cursor.y + Math.sin(angle) * flingDistance;
-  ctx.quadraticCurveTo(
-    cursor.x + Math.cos(angle + 0.6) * flingDistance * 0.5,
-    cursor.y + Math.sin(angle + 0.6) * flingDistance * 0.5,
-    endX,
-    endY,
-  );
+  let px = cursor.x;
+  let py = cursor.y;
+  let heading = rand() * TAU;
+  for (let i = 0; i < segments; i++) {
+    heading += (rand() - 0.5) * 2.6;
+    const segLen = (reach / segments) * (0.6 + rand() * 0.8);
+    const nx = px + Math.cos(heading) * segLen;
+    const ny = py + Math.sin(heading) * segLen;
+    const cx = px + Math.cos(heading - 0.6) * segLen * 0.5;
+    const cy = py + Math.sin(heading - 0.6) * segLen * 0.5;
+    // Tapers toward the tail, the way a dripped line thins as it runs out.
+    ctx.lineWidth = Math.max(0.4, (0.5 + note.amplitude * 1.6) * (1 - i / (segments + 1)));
+    ctx.quadraticCurveTo(cx, cy, nx, ny);
+    px = nx;
+    py = ny;
+  }
   ctx.stroke();
 
-  ctx.fillStyle = color.rgba(0.6);
-  for (let i = 0; i < dropCount; i++) {
+  // Fine spatter flecks where the loaded stick broke contact -- small and
+  // sparse, never a filled blob.
+  ctx.fillStyle = color.rgba(0.5);
+  for (let i = 0; i < flickCount; i++) {
     const t = rand();
-    const px = cursor.x + (endX - cursor.x) * t + (rand() - 0.5) * 14;
-    const py = cursor.y + (endY - cursor.y) * t + (rand() - 0.5) * 14;
-    const r = 0.5 + rand() * (1.5 + note.amplitude * 3);
+    const fx = cursor.x + (px - cursor.x) * t + (rand() - 0.5) * 10;
+    const fy = cursor.y + (py - cursor.y) * t + (rand() - 0.5) * 10;
+    const r = 0.4 + rand() * (0.5 + note.amplitude * 1.2);
     ctx.beginPath();
-    ctx.arc(px, py, r, 0, TAU);
+    ctx.arc(fx, fy, r, 0, TAU);
     ctx.fill();
   }
   ctx.restore();

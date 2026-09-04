@@ -9,6 +9,7 @@ import {
   ALL_OVER_STYLES,
   FIELD_STYLES,
   FLOW_STYLES,
+  FOCAL_STYLES,
   GRID_STYLES,
   SPARSE_STYLES,
   type ArmCursor,
@@ -47,11 +48,14 @@ function mulberry32(seed: number) {
   };
 }
 
-// The two focal-family styles, plus Pollock, are interchangeable for a
-// rhythmic accent stroke -- all three are gestural enough that a stray
-// stroke in one of the others' techniques still reads as emphasis rather
-// than a jarring style break.
-const ACCENT_STYLES: PaintStyleId[] = ["dekooning", "kelly", "pollock"];
+// The focal-family styles are interchangeable for a rhythmic accent stroke
+// -- both are gestural enough that a stray stroke in the other's technique
+// still reads as emphasis rather than a jarring style break. Pollock is
+// deliberately excluded: his all-over action-painting technique never
+// varied within a canvas, so a rhythmic passage should still look like
+// Pollock, just bolder (handled below), never like a hard-edged Kelly
+// block or a de Kooning slash breaking into the middle of a drip painting.
+const ACCENT_STYLES: PaintStyleId[] = FOCAL_STYLES;
 
 const NEUTRAL_THEME: ThemeInfluence = {
   warmth: 0,
@@ -645,8 +649,14 @@ export class PaintEngine {
         this.lastMelodic = null;
 
         let renderStyle = this.styleId;
-        if (phrase.phase === "rhythmic" && note.isOnset && this.rand() < 0.22) {
-          // An occasional accent in a different brush technique, for emphasis.
+        if (
+          FOCAL_STYLES.includes(this.styleId) &&
+          phrase.phase === "rhythmic" &&
+          note.isOnset &&
+          this.rand() < 0.22
+        ) {
+          // An occasional accent in the other focal style's brush technique,
+          // for emphasis. Pollock never participates -- see ACCENT_STYLES.
           const others = ACCENT_STYLES.filter((s) => s !== this.styleId);
           renderStyle = others[Math.floor(this.rand() * others.length)];
         }
