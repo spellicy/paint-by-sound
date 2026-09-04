@@ -33,6 +33,13 @@ Everything runs client-side on the Web Audio API:
 - **Timbre** — spectral centroid (brightness of the sound), affecting tint.
 - **Onsets** — a simple adaptive energy threshold flags the start of a new
   note/hit, triggering a fresh brush gesture.
+- **Key (major/minor)** — a rolling, amplitude-weighted pitch-class
+  histogram correlated against the classic Krumhansl-Kessler major/minor
+  key profiles (`src/audio/keyDetector.ts`), the same technique real
+  music-information-retrieval key finders use. It's a slow-forming signal
+  by nature — a few seconds of material before it can commit to a guess,
+  and it keeps drifting with the piece rather than averaging everything
+  played so far — shown live in the status bar once confident enough.
 
 ## How it paints
 
@@ -61,6 +68,21 @@ one full-saturation rainbow applied uniformly to everyone:
 | Cézanne | Constructive hatched planes across focal areas — small parallel rectangular strokes at one of a few fixed angles, patched together | Muted structured naturalism: blue, green, ochre, terracotta |
 | Dalí | **Sparse** — most notes are skipped so the arm places only a few, well-separated forms across a mostly empty canvas, each a smooth melting droop with a long cast shadow | Warm desert sand and rust against a stark dream-sky blue |
 | Van Gogh | **Swirl** — a persistent, slowly-drifting curl (not random jitter) produces extended spiraling loops, like the sky in *Starry Night*; thick layered impasto strokes follow the arm's direction of travel | Bold complementary contrast: gold/yellow against deep blue, with a hot orange accent |
+
+### Major and minor
+
+Every palette above also responds to the detected key's mode
+(`src/paint/palettes.ts`, fed by `keyDetector.ts`): major-key material leans
+the whole canvas brighter and a touch more saturated, minor-key material
+leans it darker and more muted — the same emotional shorthand major/minor
+already carries for composers and listeners, just applied to paint instead
+of the staff. It's confidence-scaled, so this eases in as the detector's
+guess firms up rather than snapping the moment a key is guessed. **Picasso**
+gets one further step: on minor-key material, his usual analytic-cubist
+ochre/blue-grey palette eases toward black-and-white as confidence climbs —
+evoking *Guernica*, the black-and-white political mural he turned to for his
+most anguished work — while major-key Picasso pieces keep his normal
+cubist coloring.
 
 The gestural/geometric family (Kandinsky, Klee, Picasso, Pollock, Cézanne) is
 also phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which
@@ -137,6 +159,7 @@ src/
   audio/analyzer.ts       Web Audio pitch/loudness/timbre/onset analysis
   audio/pitchColor.ts     note -> synesthetic color mapping (continuous hue)
   audio/phraseTracker.ts  musical phase detection (wash/melodic/rhythmic/composing)
+  audio/keyDetector.ts    rolling pitch-class histogram -> major/minor key estimate
   theme/lexicon.ts        mood-word -> warmth/luminosity/turbulence lookup
   theme/subjects.ts       subject-word -> abstract shape primitives lookup
   theme/themeAnalyzer.ts  reads a title/lyrics into a ThemeInfluence

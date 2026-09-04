@@ -1,4 +1,5 @@
 import type { NoteEvent } from "../audio/analyzer";
+import type { KeyEstimate } from "../audio/keyDetector";
 import { frequencyToNoteColor, type NoteColor } from "../audio/pitchColor";
 import { PhraseTracker, type PaintPhase } from "../audio/phraseTracker";
 import { stylizeColor } from "./palettes";
@@ -60,6 +61,8 @@ const NEUTRAL_THEME: ThemeInfluence = {
   matchedSubjects: [],
 };
 
+const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
+
 interface RothkoBand {
   yStart: number;
   yEnd: number;
@@ -89,6 +92,7 @@ export class PaintEngine {
   private motifPainted = false;
   private motifAnchors: { x: number; y: number }[] = [];
   private theme: ThemeInfluence = NEUTRAL_THEME;
+  private keyEstimate: KeyEstimate = NEUTRAL_KEY;
   styleId: PaintStyleId;
   private onNoteRendered?: (color: NoteColor, note: NoteEvent, phase: PaintPhase) => void;
 
@@ -120,6 +124,12 @@ export class PaintEngine {
     this.theme = theme;
   }
 
+  /** Set the live major/minor key estimate (from the audio itself, updated
+   * continuously as the piece plays -- see `keyDetector.ts`). */
+  setKeyEstimate(key: KeyEstimate) {
+    this.keyEstimate = key;
+  }
+
   clear() {
     this.ctx.save();
     this.ctx.globalCompositeOperation = "source-over";
@@ -139,6 +149,7 @@ export class PaintEngine {
     this.lastMelodic = null;
     this.motifPainted = false;
     this.motifAnchors = [];
+    this.keyEstimate = NEUTRAL_KEY;
   }
 
   private nearestMotifAnchor(x: number, y: number): { x: number; y: number } | null {
@@ -502,7 +513,7 @@ export class PaintEngine {
         48 + this.rand() * 12,
         45 + this.rand() * 10,
       );
-      const color = stylizeColor(rawColor, this.styleId, this.theme);
+      const color = stylizeColor(rawColor, this.styleId, this.theme, this.keyEstimate);
       const amplitude = Math.min(1, mark.amplitude * (0.6 + motifStrength * 0.5));
       const note: NoteEvent = { time: 0, frequency: 0, amplitude, brightness: 0.5, isOnset: mark.onset };
       this.cursor.x = mark.x;
@@ -568,7 +579,7 @@ export class PaintEngine {
       note.brightness,
       drift + jitter + this.theme.hueRotation * 0.4,
     );
-    const color = stylizeColor(rawColor, this.styleId, this.theme);
+    const color = stylizeColor(rawColor, this.styleId, this.theme, this.keyEstimate);
 
     const dueForWash =
       phrase.phase === "wash" ||

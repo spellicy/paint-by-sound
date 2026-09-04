@@ -1,6 +1,9 @@
 import type { NoteColor } from "../audio/pitchColor";
+import type { KeyEstimate } from "../audio/keyDetector";
 import type { ThemeInfluence } from "../theme/themeAnalyzer";
 import type { PaintStyleId } from "./types";
+
+const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 
 /**
  * Each painter worked with a limited, characteristic palette -- Rothko's
@@ -128,11 +131,20 @@ const COOL_ANCHOR = 218; // blue
  * warmth/luminosity) to a raw, pitch-derived color. This is what keeps
  * each style visually distinct and keeps colors from reading as one
  * uniform neon rainbow regardless of who's "painting."
+ *
+ * `key` is the live major/minor estimate (`src/audio/keyDetector.ts`) --
+ * major leans the whole palette brighter and a touch more saturated, minor
+ * leans it darker and more muted, the same emotional shorthand major/minor
+ * already carries for composers and listeners, confidence-scaled so an
+ * ambiguous or just-started piece barely shifts. Picasso specifically eases
+ * toward black-and-white on minor-key material -- evoking *Guernica* --
+ * while keeping his usual analytic-cubist coloring for major-key passages.
  */
 export function stylizeColor(
   raw: NoteColor,
   styleId: PaintStyleId,
   theme: ThemeInfluence,
+  key: KeyEstimate = NEUTRAL_KEY,
 ): NoteColor {
   const preset = PALETTES[styleId];
 
@@ -149,7 +161,7 @@ export function stylizeColor(
   hue = (hue + 360) % 360;
 
   const [satMin, satMax] = preset.saturation;
-  const saturation = clamp(
+  let saturation = clamp(
     satMin + (raw.saturation / 100) * (satMax - satMin),
     satMin,
     satMax,
@@ -162,6 +174,21 @@ export function stylizeColor(
     litMax,
   );
   lightness = clamp(lightness + theme.luminosity * 10, 8, 92);
+
+  if (key.mode === "major") {
+    lightness = clamp(lightness + key.confidence * 9, 6, 94);
+    saturation = clamp(saturation + key.confidence * 7, 0, 100);
+  } else if (key.mode === "minor") {
+    lightness = clamp(lightness - key.confidence * 9, 6, 94);
+    saturation = clamp(saturation - key.confidence * 6, 0, 100);
+
+    if (styleId === "picasso") {
+      // Ease toward grayscale as confidence in a minor key firms up,
+      // rather than snapping the moment it crosses a threshold.
+      const bw = clamp((key.confidence - 0.3) / 0.5, 0, 1);
+      saturation = saturation * (1 - bw) + 3 * bw;
+    }
+  }
 
   return {
     ...raw,

@@ -4,6 +4,10 @@
 // concept doc -- it listens to whatever is playing and emits a stream of
 // NoteEvents for the paint engine to react to.
 
+import { KeyDetector, type KeyEstimate } from "./keyDetector";
+
+export type { KeyEstimate };
+
 export interface NoteEvent {
   time: number;
   frequency: number; // Hz, 0 if unvoiced/no pitch detected
@@ -25,6 +29,7 @@ export class SoundAnalyzer {
   private rmsHistory: number[] = [];
   private lastOnsetAt = 0;
   private armed = true;
+  private keyDetector = new KeyDetector();
 
   constructor() {
     this.ctx = new AudioContext();
@@ -44,6 +49,12 @@ export class SoundAnalyzer {
     return () => {
       this.listeners = this.listeners.filter((l) => l !== listener);
     };
+  }
+
+  /** The current major/minor key estimate, read fresh by the paint engine
+   * on every note -- see `keyDetector.ts` for how it's derived. */
+  getKeyEstimate(): KeyEstimate {
+    return this.keyDetector.getEstimate();
   }
 
   async playFile(file: File): Promise<{ duration: number }> {
@@ -113,6 +124,7 @@ export class SoundAnalyzer {
     }
     this.rmsHistory = [];
     this.armed = true;
+    this.keyDetector.reset();
   }
 
   private startLoop() {
@@ -151,6 +163,12 @@ export class SoundAnalyzer {
     if (isOnset) {
       this.lastOnsetAt = now;
       this.armed = false;
+    }
+
+    if (frequency > 0) {
+      const midi = 69 + 12 * Math.log2(frequency / 440);
+      const pitchClass = ((Math.round(midi) % 12) + 12) % 12;
+      this.keyDetector.addPitch(pitchClass, rms, now);
     }
 
     // Only emit meaningful events -- skip near-silence to let strokes settle.

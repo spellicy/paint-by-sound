@@ -15,6 +15,9 @@ export interface LiveStatus {
   amplitude: number;
   isOnset: boolean;
   phase: PaintPhase | null;
+  keyMode: "major" | "minor" | null;
+  keyConfidence: number;
+  keyTonic: number | null;
 }
 
 export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
@@ -37,6 +40,9 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     amplitude: 0,
     isOnset: false,
     phase: null,
+    keyMode: null,
+    keyConfidence: 0,
+    keyTonic: null,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -55,12 +61,16 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
       canvas: canvasRef.current,
       styleId,
       onNoteRendered: (color: NoteColor, note: NoteEvent, phase: PaintPhase) => {
+        const key = analyzerRef.current?.getKeyEstimate();
         setStatus({
           note: note.frequency > 0 ? color.noteName : null,
           octave: note.frequency > 0 ? color.octave : null,
           amplitude: note.amplitude,
           isOnset: note.isOnset,
           phase,
+          keyMode: key?.mode ?? null,
+          keyConfidence: key?.confidence ?? 0,
+          keyTonic: key?.tonic ?? null,
         });
       },
     });
@@ -93,7 +103,10 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
       try {
         const analyzer = ensureAnalyzer();
         unsubRef.current?.();
-        unsubRef.current = analyzer.onNote((note) => engineRef.current?.paintNote(note));
+        unsubRef.current = analyzer.onNote((note) => {
+          engineRef.current?.setKeyEstimate(analyzer.getKeyEstimate());
+          engineRef.current?.paintNote(note);
+        });
         const name = file.name.replace(/\.[^/.]+$/, "");
         setTrackName(name);
         // Only auto-fill the inspiration title from the filename if the
@@ -116,7 +129,10 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     try {
       const analyzer = ensureAnalyzer();
       unsubRef.current?.();
-      unsubRef.current = analyzer.onNote((note) => engineRef.current?.paintNote(note));
+      unsubRef.current = analyzer.onNote((note) => {
+        engineRef.current?.setKeyEstimate(analyzer.getKeyEstimate());
+        engineRef.current?.paintNote(note);
+      });
       setTrackName("Live input");
       setSourceMode("mic");
       await analyzer.startMic();

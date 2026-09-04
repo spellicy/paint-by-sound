@@ -1,4 +1,5 @@
 import type { LiveStatus, SourceMode } from "../hooks/usePaintBySound";
+import { NOTE_NAMES } from "../audio/pitchColor";
 
 interface StatusBarProps {
   status: LiveStatus;
@@ -41,6 +42,19 @@ export function StatusBar({ status, sourceMode, trackName }: StatusBarProps) {
         <span>
           Amp: <span className="text-stone-200">{Math.round(status.amplitude * 100)}%</span>
         </span>
+        {status.keyMode && status.keyTonic !== null && (
+          <span>
+            Key:{" "}
+            <span
+              className={status.keyMode === "major" ? "text-amber-200" : "text-indigo-300"}
+            >
+              {NOTE_NAMES[status.keyTonic]} {status.keyMode}
+            </span>{" "}
+            <span className="text-stone-600">
+              {Math.round(status.keyConfidence * 100)}%
+            </span>
+          </span>
+        )}
       </div>
     </div>
   );
