@@ -36,7 +36,7 @@ export function Controls({
           <input
             ref={fileInputRef}
             type="file"
-            accept="audio/*"
+            accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.webm"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
