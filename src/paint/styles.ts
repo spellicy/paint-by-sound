@@ -275,44 +275,6 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   vangogh,
 };
 
-/**
- * Impasto shading: a soft dark shadow cast down-right under every stroke,
- * plus a small bright "sheen" up-left, screen-blended so it only ever
- * brightens. Canvas 2D has no real lighting model, but this two-sided cue
- * -- shadow where thick paint would block a gallery light, a highlight
- * where it would catch one -- is enough to read as raised, textured paint
- * rather than flat color. Applied once here, geometry-agnostic (it doesn't
- * need to know the stroke's exact path), so all ten painters' brushwork
- * gets it uniformly without touching each renderer above. Rothko never
- * calls into here -- his soft-edged color fields are rendered directly by
- * PaintEngine.renderRothkoField, and deliberately skip this: his technique
- * is luminous layering, not relief, and embossing it would fight the look.
- */
-function applyImpasto(s: StrokeContext, draw: () => void) {
-  const { ctx, cursor, note } = s;
-  ctx.save();
-  ctx.shadowColor = "rgba(20, 14, 8, 0.4)";
-  ctx.shadowBlur = 1 + note.amplitude * 2.5;
-  ctx.shadowOffsetX = 1 + note.amplitude * 1.6;
-  ctx.shadowOffsetY = 1 + note.amplitude * 1.6;
-
-  draw();
-
-  ctx.shadowColor = "transparent";
-  ctx.globalCompositeOperation = "screen";
-  const sheenR = 2.5 + note.amplitude * 6;
-  const sx = cursor.x - sheenR * 0.6;
-  const sy = cursor.y - sheenR * 0.6;
-  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sheenR);
-  grad.addColorStop(0, `rgba(255, 255, 255, ${(0.16 + note.amplitude * 0.12).toFixed(3)})`);
-  grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(sx, sy, sheenR, 0, TAU);
-  ctx.fill();
-  ctx.restore();
-}
-
 export function renderStroke(styleId: PaintStyleId, s: StrokeContext) {
-  applyImpasto(s, () => STYLE_RENDERERS[styleId](s));
+  STYLE_RENDERERS[styleId](s);
 }

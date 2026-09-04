@@ -43,18 +43,6 @@ Everything runs client-side on the Web Audio API:
 
 ## How it paints
 
-Every stroke also gets **impasto shading** (`applyImpasto` in
-`src/paint/styles.ts`): a soft dark shadow cast down-right, plus a small
-bright sheen up-left, screen-blended so it only ever brightens. Canvas 2D
-has no real lighting model, but that two-sided cue — shadow where thick
-paint would block a gallery light, a highlight where it would catch one —
-is enough to read as raised, textured paint instead of flat color. It's
-applied once, geometry-agnostic, in the shared stroke dispatcher, so all
-ten painters' brushwork gets it uniformly with no changes to the individual
-renderers. Rothko's soft-edged color fields (rendered directly, not through
-that dispatcher) deliberately skip it — his technique is luminous layering,
-not relief, and embossing it would fight the look.
-
 Painting isn't one stamp per note. Color hues interpolate continuously
 between notes (no snapping to fixed steps), plus a slow palette drift over
 the piece and per-stroke jitter, so the same note never paints quite the
