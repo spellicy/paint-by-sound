@@ -1,16 +1,24 @@
 /**
  * A small curated "subject" lexicon -- reads a title/lyrics for a concrete
- * physical subject (a place, a scene) the way "seaside" or "mountains"
- * might inspire a landscape's underlying shapes, distinct from the mood
- * lexicon's emotional/atmospheric reading of the same text. Each matched
- * word nudges the composition toward a handful of abstract visual
- * primitives -- never literal objects, just the underlying shapes a
- * landscape painter might block in before the music takes over: a horizon
- * line, a ridge of peaks, a stand of verticals. Which painter is selected
- * still decides how those primitives actually get marked down -- the same
- * "seaside" horizon reads as a Rothko color-field band, a string of Monet
- * broken-color dabs, or a row of Van Gogh impasto strokes.
+ * physical subject the way "seaside" or "a cat" might inspire the
+ * underlying shape a landscape (or figure) painter would block in before
+ * the music takes over, distinct from the mood lexicon's emotional reading
+ * of the same text. Two kinds of primitive:
+ *
+ * - Landscape primitives (horizon, waves, peaks, ...) -- abstract shapes,
+ *   never literal objects.
+ * - Subject figures (person, cat, dog, ...) -- literal (if simply drawn)
+ *   silhouettes, defined in `src/paint/silhouettes.ts`.
+ *
+ * Either way, which painter is selected still decides how the primitive
+ * actually gets marked down: the same "seaside" horizon reads as a Rothko
+ * color-field band or a row of Monet dabs; the same "cat" comes out
+ * fragmented and cubist through Picasso, or soft and broken-color through
+ * Monet -- the literal subject stays constant, the hand is entirely the
+ * painter's own.
  */
+
+import type { SubjectFigure } from "../paint/silhouettes";
 
 export type MotifPrimitive =
   | "horizon"
@@ -21,7 +29,8 @@ export type MotifPrimitive =
   | "grid"
   | "disc"
   | "spiral"
-  | "field";
+  | "field"
+  | SubjectFigure;
 
 export const MOTIF_LABELS: Record<MotifPrimitive, string> = {
   horizon: "horizon",
@@ -33,6 +42,17 @@ export const MOTIF_LABELS: Record<MotifPrimitive, string> = {
   disc: "disc",
   spiral: "spiral",
   field: "open field",
+  person: "a person",
+  cat: "a cat",
+  dog: "a dog",
+  bird: "a bird",
+  tree: "a tree",
+  house: "a house",
+  flower: "a flower",
+  boat: "a boat",
+  car: "a car",
+  star: "a star",
+  heart: "a heart",
 };
 
 export interface SubjectHint {
@@ -65,12 +85,11 @@ export const SUBJECT_LEXICON: Record<string, SubjectHint> = {
   ridge: { primitives: ["peaks"], strength: 0.6 },
   valley: { primitives: ["peaks", "horizon"], strength: 0.5 },
 
-  // Forest
+  // Forest (many trees -- abstract canopy/verticals texture)
   forest: { primitives: ["canopy", "verticals"], strength: 0.8 },
   woods: { primitives: ["canopy", "verticals"], strength: 0.7 },
   jungle: { primitives: ["canopy"], strength: 0.7 },
-  tree: { primitives: ["verticals"], strength: 0.5 },
-  trees: { primitives: ["verticals"], strength: 0.6 },
+  trees: { primitives: ["canopy", "verticals"], strength: 0.6 },
   orchard: { primitives: ["verticals"], strength: 0.5 },
 
   // City
@@ -111,6 +130,51 @@ export const SUBJECT_LEXICON: Record<string, SubjectHint> = {
   snow: { primitives: ["field"], strength: 0.3 },
   river: { primitives: ["waves", "horizon"], strength: 0.5 },
   lake: { primitives: ["horizon"], strength: 0.4 },
+
+  // People
+  person: { primitives: ["person"], strength: 0.7 },
+  people: { primitives: ["person"], strength: 0.6 },
+  man: { primitives: ["person"], strength: 0.6 },
+  woman: { primitives: ["person"], strength: 0.6 },
+  girl: { primitives: ["person"], strength: 0.6 },
+  boy: { primitives: ["person"], strength: 0.6 },
+  dancer: { primitives: ["person"], strength: 0.6 },
+  figure: { primitives: ["person"], strength: 0.5 },
+
+  // Animals
+  cat: { primitives: ["cat"], strength: 0.8 },
+  kitten: { primitives: ["cat"], strength: 0.7 },
+  kitty: { primitives: ["cat"], strength: 0.7 },
+  dog: { primitives: ["dog"], strength: 0.8 },
+  puppy: { primitives: ["dog"], strength: 0.7 },
+  bird: { primitives: ["bird"], strength: 0.7 },
+  sparrow: { primitives: ["bird"], strength: 0.6 },
+  dove: { primitives: ["bird"], strength: 0.6 },
+  crow: { primitives: ["bird"], strength: 0.6 },
+  eagle: { primitives: ["bird"], strength: 0.6 },
+
+  // A single tree (literal), as opposed to "trees"/"forest" (abstract texture)
+  tree: { primitives: ["tree"], strength: 0.7 },
+  oak: { primitives: ["tree"], strength: 0.6 },
+  willow: { primitives: ["tree"], strength: 0.6 },
+
+  // Everyday objects
+  house: { primitives: ["house"], strength: 0.7 },
+  home: { primitives: ["house"], strength: 0.5 },
+  cottage: { primitives: ["house"], strength: 0.6 },
+  cabin: { primitives: ["house"], strength: 0.6 },
+  flower: { primitives: ["flower"], strength: 0.7 },
+  rose: { primitives: ["flower"], strength: 0.7 },
+  tulip: { primitives: ["flower"], strength: 0.6 },
+  daisy: { primitives: ["flower"], strength: 0.6 },
+  lily: { primitives: ["flower"], strength: 0.6 },
+  blossom: { primitives: ["flower"], strength: 0.6 },
+  boat: { primitives: ["boat"], strength: 0.7 },
+  ship: { primitives: ["boat"], strength: 0.6 },
+  sailboat: { primitives: ["boat"], strength: 0.7 },
+  car: { primitives: ["car"], strength: 0.6 },
+  automobile: { primitives: ["car"], strength: 0.5 },
+  heart: { primitives: ["heart"], strength: 0.6 },
 };
 
 /**

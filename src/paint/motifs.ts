@@ -1,4 +1,5 @@
 import type { MotifPrimitive } from "../theme/subjects";
+import { SILHOUETTES, sampleSilhouette, type SubjectFigure } from "./silhouettes";
 
 /**
  * A single point in a subject's abstract underlying shape -- a place on the
@@ -200,7 +201,7 @@ const spiral: Generator = (width, height, _rand) => {
 // and motifStrength, not an explicit mark set.
 const field: Generator = () => [];
 
-const GENERATORS: Record<MotifPrimitive, Generator> = {
+const GENERATORS: Partial<Record<MotifPrimitive, Generator>> = {
   horizon,
   waves,
   peaks,
@@ -212,6 +213,63 @@ const GENERATORS: Record<MotifPrimitive, Generator> = {
   field,
 };
 
+/** A base hue per figure -- the same role `hue` plays for the landscape
+ * primitives above, tuned to each subject's natural coloring before the
+ * selected painter's own palette pulls it toward their signature range. */
+const FIGURE_HUES: Record<SubjectFigure, number> = {
+  person: 25,
+  cat: 35,
+  dog: 30,
+  bird: 200,
+  tree: 120,
+  house: 15,
+  flower: 330,
+  boat: 205,
+  car: 0,
+  star: 50,
+  heart: 350,
+};
+
+/** A literal subject silhouette (person, cat, tree, ...) sampled into
+ * marks -- one per outline edge (so directional painters like Van Gogh
+ * trace its contour), plus a scattering of interior fill points. Unlike
+ * the landscape primitives above, this is geometry-driven rather than
+ * hand-authored point-by-point, since a growing library of figures would
+ * otherwise mean hand-placing dozens of points per new subject. */
+function figureMarks(
+  figure: SubjectFigure,
+  width: number,
+  height: number,
+  rand: () => number,
+): MotifMark[] {
+  const silhouette = SILHOUETTES[figure];
+  const cx = width * (0.3 + rand() * 0.4);
+  const cy = height * (0.35 + rand() * 0.25);
+  // A subject should read as a clear, contained shape -- not swallow the
+  // whole canvas. The design space's parts (a cat's tail, a bird's wing)
+  // can extend noticeably past the nominal -50..50 box, so `scale` here
+  // is tuned down from a naive "half the canvas" guess to keep the actual
+  // rendered extent to roughly a quarter to a third of the canvas.
+  const scale = Math.min(width, height) * (0.2 + rand() * 0.1);
+  const baseHue = FIGURE_HUES[figure];
+  const points = sampleSilhouette(silhouette, cx, cy, scale, rand, 100);
+
+  return points.map((p, i) => ({
+    x: p.x,
+    y: p.y,
+    heading: p.heading,
+    hue: baseHue + (p.partIndex % 3) * 8 - 8,
+    // Deliberately small -- most painters' stroke size scales with
+    // amplitude (Picasso's polygons alone can span 20-130px), so at a
+    // "normal" amplitude a handful of strokes are as big as the whole
+    // silhouette and swallow its shape entirely. Fine, low-amplitude
+    // marks are what let hundreds of small strokes still read as a
+    // recognizable outline rather than a few oversized blobs.
+    amplitude: 0.04 + rand() * 0.11,
+    onset: i % 9 === 0,
+  }));
+}
+
 export function generateMotifMarks(
   primitives: MotifPrimitive[],
   width: number,
@@ -221,7 +279,12 @@ export function generateMotifMarks(
 ): MotifMark[] {
   const marks: MotifMark[] = [];
   for (const p of primitives) {
-    marks.push(...GENERATORS[p](width, height, rand, warmth));
+    const generator = GENERATORS[p];
+    if (generator) {
+      marks.push(...generator(width, height, rand, warmth));
+    } else {
+      marks.push(...figureMarks(p as SubjectFigure, width, height, rand));
+    }
   }
   return marks;
 }
