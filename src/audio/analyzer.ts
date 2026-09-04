@@ -24,6 +24,7 @@ export class SoundAnalyzer {
   private freqDomain: Uint8Array<ArrayBuffer>;
   private rmsHistory: number[] = [];
   private lastOnsetAt = 0;
+  private armed = true;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -95,6 +96,7 @@ export class SoundAnalyzer {
       // no-op
     }
     this.rmsHistory = [];
+    this.armed = true;
   }
 
   private startLoop() {
@@ -117,13 +119,23 @@ export class SoundAnalyzer {
     if (this.rmsHistory.length > 30) this.rmsHistory.shift();
     const avgRms = this.rmsHistory.reduce((a, b) => a + b, 0) / this.rmsHistory.length;
 
+    // Edge-triggered with hysteresis (a Schmitt trigger): fire only on the
+    // rising crossing above 1.35x the rolling average, then stay "disarmed"
+    // until the level drops back under 1.1x before it can fire again. A
+    // level-triggered version of this (fire whenever rms > avg*1.35 and the
+    // cooldown has elapsed) kept re-firing every ~120ms for the better part
+    // of a second after any attack, because the rolling average takes time
+    // to catch up to a new sustained level -- a single held note would
+    // otherwise read as a rapid onset train.
     const now = this.ctx.currentTime;
-    const isOnset =
-      rms > 0.02 &&
-      rms > avgRms * 1.35 &&
-      now - this.lastOnsetAt > 0.12;
+    const risingEdge = rms > avgRms * 1.35 && this.armed;
+    if (rms < avgRms * 1.1) this.armed = true;
+    const isOnset = rms > 0.02 && risingEdge && now - this.lastOnsetAt > 0.12;
 
-    if (isOnset) this.lastOnsetAt = now;
+    if (isOnset) {
+      this.lastOnsetAt = now;
+      this.armed = false;
+    }
 
     // Only emit meaningful events -- skip near-silence to let strokes settle.
     if (rms < 0.006 && !isOnset) return;

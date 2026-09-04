@@ -32,24 +32,39 @@ ever uploaded anywhere.
 
 ## How it paints
 
-- **`src/paint/PaintEngine.ts`** &mdash; owns the simulated robotic arm's
-  brush position (`ArmCursor`) on the canvas. Pitch moves the cursor
-  vertically (higher notes paint higher), and it drifts and scans
-  horizontally over time, like a gantry sweeping the canvas. Each `NoteEvent`
-  is converted to a color and handed to the active style renderer.
-- **`src/paint/styles.ts`** &mdash; four independent stroke renderers
-  selectable at runtime:
-  - **Kandinsky** &mdash; geometric arcs, circles and lines.
-  - **Klee** &mdash; small organic dabs drifting across the canvas.
-  - **Pollock** &mdash; flung drips and splatter, driven by loudness.
-  - **Picasso** &mdash; angular, fragmented cubist planes.
+Painting isn't one stamp per note — `PhraseTracker` (`src/audio/phraseTracker.ts`)
+reads the arc of the music (loudness trend, onset density, how sustained or
+percussive things are) and puts the engine into one of four phases:
 
-A seeded PRNG (`mulberry32`) drives all the "randomness" in a stroke, so a
-given style's texture is reproducible run to run.
+- **Wash** — at the start, and again on major dynamic shifts, a soft
+  translucent gradient sweep lays down an underpainting before any detail.
+- **Melodic** — sustained, sparsely-attacked passages (a held note, a legato
+  line) are drawn as one continuous flowing line tracing the pitch contour,
+  instead of discrete stamps.
+- **Rhythmic** — dense or loud passages get bolder marks, occasionally in an
+  accent brush style different from the base one, for percussive emphasis.
+- **Composing** — the default per-note stroke behavior.
 
-Finished paintings can be saved to a small **gallery** (`src/gallery/`),
-persisted to `localStorage` and rendered on the page as an exhibit catalog,
-with a download option for each piece.
+The simulated "arm" also composes rather than scans: it's drawn toward a
+slowly-relocating, rule-of-thirds focal area rather than sweeping the canvas
+uniformly, so strokes build up around evolving areas of interest. Color hues
+interpolate continuously between notes (no snapping to fixed steps), plus a
+slow palette drift over the piece and per-stroke jitter, so the same note
+never paints quite the same way twice.
+
+Four selectable base brush styles (`src/paint/styles.ts`) give very different
+results from the same audio:
+
+| Style | Character |
+|---|---|
+| Kandinsky | Geometric arcs, concentric rings, straight lines |
+| Klee | Small organic dabs and squares, quiet and gridded |
+| Pollock | Flung drip paths and splatter, scaled by loudness |
+| Picasso | Angular, overlapping cubist polygons |
+
+Finished paintings can be saved to an in-browser **exhibit catalog**
+(`localStorage`), each tagged with track name, style, and date — a small
+nod to the gallery catalog described in the original concept.
 
 ## Running it
 
@@ -70,6 +85,7 @@ src/
   audio/
     analyzer.ts       # pitch/loudness/timbre/onset detection (the "AI ear")
     pitchColor.ts      # note -> synesthetic color mapping
+    phraseTracker.ts musical phase detection (wash/melodic/rhythmic/composing)
   paint/
     PaintEngine.ts      # simulated arm cursor + per-note rendering
     styles.ts           # Kandinsky / Klee / Pollock / Picasso stroke renderers

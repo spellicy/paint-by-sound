@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SoundAnalyzer, type NoteEvent } from "../audio/analyzer";
 import type { NoteColor } from "../audio/pitchColor";
+import type { PaintPhase } from "../audio/phraseTracker";
 import { PaintEngine } from "../paint/PaintEngine";
 import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
@@ -12,6 +13,7 @@ export interface LiveStatus {
   octave: number | null;
   amplitude: number;
   isOnset: boolean;
+  phase: PaintPhase | null;
 }
 
 export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
@@ -27,6 +29,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     octave: null,
     amplitude: 0,
     isOnset: false,
+    phase: null,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -35,12 +38,13 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     const engine = new PaintEngine({
       canvas: canvasRef.current,
       styleId,
-      onNoteRendered: (color: NoteColor, note: NoteEvent) => {
+      onNoteRendered: (color: NoteColor, note: NoteEvent, phase: PaintPhase) => {
         setStatus({
           note: note.frequency > 0 ? color.noteName : null,
           octave: note.frequency > 0 ? color.octave : null,
           amplitude: note.amplitude,
           isOnset: note.isOnset,
+          phase,
         });
       },
     });

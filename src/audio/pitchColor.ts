@@ -34,18 +34,35 @@ export interface NoteColor {
   rgba: (alpha: number) => string;
 }
 
+/**
+ * Hue for a *continuous* (unrounded) MIDI pitch, interpolated between the
+ * twelve anchor hues above. A note that bends or sits between semitones
+ * shades smoothly instead of snapping between fixed colors -- one source of
+ * the extra color variation across a painting.
+ */
+function interpolatedHue(midi: number): number {
+  const pc = ((midi % 12) + 12) % 12; // continuous 0..12
+  const lower = Math.floor(pc);
+  const upper = (lower + 1) % 12;
+  const frac = pc - lower;
+  const h1 = PITCH_CLASS_HUE[lower];
+  const h2 = upper === 0 ? 360 : PITCH_CLASS_HUE[upper];
+  return (h1 + (h2 - h1) * frac) % 360;
+}
+
 /** Convert a detected fundamental frequency (Hz) into a note + synesthetic color. */
 export function frequencyToNoteColor(
   frequency: number,
   amplitude: number, // 0..1 RMS
   brightness: number, // 0..1 spectral centroid, normalized
+  hueOffset = 0, // degrees -- palette drift + per-stroke jitter, added by the caller
 ): NoteColor {
   const midi = 69 + 12 * Math.log2(frequency / 440);
   const rounded = Math.round(midi);
   const pitchClass = ((rounded % 12) + 12) % 12;
   const octave = Math.floor(rounded / 12) - 1;
 
-  const hue = PITCH_CLASS_HUE[pitchClass];
+  const hue = (interpolatedHue(midi) + hueOffset + 360) % 360;
   // Louder notes = more saturated pigment; brighter timbre = lighter tint.
   const saturation = clamp(55 + amplitude * 45, 40, 100);
   const lightness = clamp(35 + brightness * 30 - amplitude * 5, 20, 75);

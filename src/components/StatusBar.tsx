@@ -6,6 +6,13 @@ interface StatusBarProps {
   trackName: string;
 }
 
+const PHASE_LABEL: Record<NonNullable<LiveStatus["phase"]>, string> = {
+  wash: "Wash",
+  melodic: "Melodic",
+  rhythmic: "Rhythmic",
+  building: "Composing",
+};
+
 export function StatusBar({ status, sourceMode, trackName }: StatusBarProps) {
   return (
     <div className="flex items-center justify-between rounded-md border border-stone-800 bg-stone-950/60 px-4 py-2 text-xs text-stone-400">
@@ -20,6 +27,11 @@ export function StatusBar({ status, sourceMode, trackName }: StatusBarProps) {
         </span>
       </div>
       <div className="flex items-center gap-4 font-mono">
+        {status.phase && (
+          <span>
+            <span className="text-amber-400">{PHASE_LABEL[status.phase]}</span>
+          </span>
+        )}
         <span>
           Note:{" "}
           <span className="text-stone-200">
