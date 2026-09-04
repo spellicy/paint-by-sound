@@ -25,7 +25,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
   const engineRef = useRef<PaintEngine | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
 
-  const [styleId, setStyleIdState] = useState<PaintStyleId>("kandinsky");
+  const [styleId, setStyleIdState] = useState<PaintStyleId>("rothko");
   const [sourceMode, setSourceMode] = useState<SourceMode>("idle");
   const [trackName, setTrackName] = useState<string>("");
   const [inspirationTitle, setInspirationTitle] = useState<string>("");

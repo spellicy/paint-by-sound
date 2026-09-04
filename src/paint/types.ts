@@ -2,16 +2,13 @@ import type { NoteColor } from "../audio/pitchColor";
 import type { NoteEvent } from "../audio/analyzer";
 
 export type PaintStyleId =
-  | "kandinsky"
-  | "klee"
-  | "pollock"
-  | "picasso"
   | "rothko"
-  | "renoir"
-  | "monet"
-  | "cezanne"
-  | "dali"
-  | "vangogh";
+  | "pollock"
+  | "dekooning"
+  | "kline"
+  | "kelly"
+  | "martin"
+  | "marden";
 
 export interface PaintStyleInfo {
   id: PaintStyleId;
@@ -21,14 +18,9 @@ export interface PaintStyleInfo {
 
 export const PAINT_STYLES: PaintStyleInfo[] = [
   {
-    id: "kandinsky",
-    label: "Kandinsky",
-    blurb: "Geometric arcs, circles and lines -- the visual concerto.",
-  },
-  {
-    id: "klee",
-    label: "Klee",
-    blurb: "Small organic dabs drifting across a quiet grid.",
+    id: "rothko",
+    label: "Rothko",
+    blurb: "Few luminous soft-edged color fields, stacked.",
   },
   {
     id: "pollock",
@@ -36,49 +28,39 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     blurb: "All-over flung drips and splatter, driven by loudness.",
   },
   {
-    id: "picasso",
-    label: "Picasso",
-    blurb: "Angular, fragmented cubist planes.",
+    id: "dekooning",
+    label: "de Kooning",
+    blurb: "Violent, slashing figurative gesture -- emotion over form.",
   },
   {
-    id: "rothko",
-    label: "Rothko",
-    blurb: "Few luminous soft-edged color fields, stacked.",
+    id: "kline",
+    label: "Kline",
+    blurb: "Bold black-and-white architectural gestural bars.",
   },
   {
-    id: "renoir",
-    label: "Renoir",
-    blurb: "Warm dappled light, full and rounded brushwork.",
+    id: "kelly",
+    label: "Kelly",
+    blurb: "Clean, hard-edged flat color forms.",
   },
   {
-    id: "monet",
-    label: "Monet",
-    blurb: "Broken color, shimmering impressionist dabs.",
+    id: "martin",
+    label: "Martin",
+    blurb: "Quiet, meditative pencil-fine grids.",
   },
   {
-    id: "cezanne",
-    label: "Cézanne",
-    blurb: "Constructive hatched planes, geometric and faceted.",
-  },
-  {
-    id: "dali",
-    label: "Dalí",
-    blurb: "Sparse, precise, melting surrealist forms.",
-  },
-  {
-    id: "vangogh",
-    label: "Van Gogh",
-    blurb: "Thick impasto, swirling directional brushwork.",
+    id: "marden",
+    label: "Marden",
+    blurb: "Sinuous monochrome line, color-field minimalism.",
   },
 ];
 
 /** Style groups with fundamentally different composition strategies. */
 export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
-export const IMPRESSION_STYLES: PaintStyleId[] = ["monet", "renoir"];
-export const FOCAL_STYLES: PaintStyleId[] = ["kandinsky", "klee", "picasso", "cezanne"];
-export const SWIRL_STYLES: PaintStyleId[] = ["vangogh"];
-export const SPARSE_STYLES: PaintStyleId[] = ["dali"];
+export const FOCAL_STYLES: PaintStyleId[] = ["dekooning", "kelly"];
+export const SPARSE_STYLES: PaintStyleId[] = ["kline"];
+export const GRID_STYLES: PaintStyleId[] = ["martin"];
+export const FLOW_STYLES: PaintStyleId[] = ["marden"];
 
 /** Simulated position of the robotic arm's brush head on the canvas. */
 export interface ArmCursor {
@@ -95,7 +77,7 @@ export interface StrokeContext {
   color: NoteColor;
   rand: () => number;
   /** Current direction of travel (radians), for styles whose brushwork
-   * follows the arm's movement (e.g. Van Gogh's swirl). Undefined for
+   * follows the arm's movement (e.g. Marden's flowing line). Undefined for
    * styles that don't move directionally. */
   heading?: number;
 }

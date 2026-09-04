@@ -7,17 +7,17 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 
 /**
  * Each painter worked with a limited, characteristic palette -- Rothko's
- * handful of deep, luminous field colors; Monet and Renoir's light,
- * atmospheric impressionist range; Pollock's earth tones punctuated by rare
- * accents. This is the opposite of one full-saturation rainbow hue wheel
- * applied uniformly to every style, which is what made every painting look
- * the same neon regardless of who was "painting."
+ * handful of deep, luminous field colors; Kline's near-total black and
+ * white; Kelly's pure saturated flats. This is the opposite of one full-
+ * saturation rainbow hue wheel applied uniformly to every style, which is
+ * what made every painting look the same neon regardless of who was
+ * "painting."
  *
  * `signatureHues` are the anchor colors of that painter's world; `huePull`
  * (0..1) is how strongly a note's raw pitch-hue gets pulled toward the
  * nearest anchor -- high for painters who worked in a tight palette
- * (Rothko), lower for painters whose color came more directly from what
- * they were looking at (Pollock's material-driven earth tones).
+ * (Rothko, Marden), lower for painters whose color ranged more widely
+ * (Pollock's material-driven earth tones, de Kooning's heated mix).
  */
 interface PalettePreset {
   signatureHues: number[];
@@ -27,19 +27,13 @@ interface PalettePreset {
 }
 
 const PALETTES: Record<PaintStyleId, PalettePreset> = {
-  kandinsky: {
-    // Bauhaus-era primaries and secondaries: red, gold, blue, yellow, green.
-    signatureHues: [8, 45, 215, 55, 140],
-    huePull: 0.35,
-    saturation: [55, 88],
-    lightness: [35, 60],
-  },
-  klee: {
-    // Muted ochre, terracotta, teal, violet, olive -- whimsical but soft.
-    signatureHues: [35, 15, 190, 260, 95],
-    huePull: 0.4,
-    saturation: [28, 55],
-    lightness: [45, 68],
+  rothko: {
+    // Deep maroon, burnt orange, plum, mustard, near-black red -- luminous
+    // through layering, not through raw brightness.
+    signatureHues: [8, 28, 300, 48, 355],
+    huePull: 0.8,
+    saturation: [40, 72],
+    lightness: [18, 42],
   },
   pollock: {
     // Earthy umber and sienna with a rare cadmium-red accent; mostly
@@ -49,59 +43,45 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [12, 55],
     lightness: [14, 50],
   },
-  picasso: {
-    // Analytic cubism: ochre/tan, blue-grey, muted brown-red.
-    signatureHues: [38, 205, 12],
-    huePull: 0.45,
-    saturation: [18, 45],
-    lightness: [28, 55],
-  },
-  rothko: {
-    // Deep maroon, burnt orange, plum, mustard, near-black red -- luminous
-    // through layering, not through raw brightness.
-    signatureHues: [8, 28, 300, 48, 355],
-    huePull: 0.8,
-    saturation: [40, 72],
-    lightness: [18, 42],
-  },
-  renoir: {
-    // Warm pink, peach, gold, soft green -- dappled garden-party light.
-    signatureHues: [350, 28, 42, 108],
-    huePull: 0.5,
-    saturation: [32, 58],
-    lightness: [58, 80],
-  },
-  monet: {
-    // Soft blue, lavender, pale green, light pink, pale gold -- broken,
-    // atmospheric color.
-    signatureHues: [208, 275, 148, 328, 45],
-    huePull: 0.45,
-    saturation: [26, 52],
-    lightness: [58, 82],
-  },
-  cezanne: {
-    // Muted, structured naturalism: blues, greens, ochre, terracotta --
-    // color built from observed planes, not expressive invention.
-    signatureHues: [205, 140, 35, 15],
-    huePull: 0.55,
-    saturation: [22, 48],
-    lightness: [32, 58],
-  },
-  dali: {
-    // Warm desert sand and rust against a stark dream-sky blue -- a barren
-    // palette with sharp, isolated color rather than continuous coverage.
-    signatureHues: [38, 195, 15],
-    huePull: 0.55,
-    saturation: [30, 62],
+  dekooning: {
+    // Flesh pink, cadmium red and yellow against black and white -- the
+    // hot, agitated palette of the Woman paintings.
+    signatureHues: [350, 20, 50],
+    huePull: 0.35,
+    saturation: [35, 75],
     lightness: [30, 68],
   },
-  vangogh: {
-    // Bold complementary contrast -- gold/yellow against deep blue/indigo,
-    // with a hot orange accent. High-key and vivid, like Starry Night.
-    signatureHues: [50, 222, 25],
-    huePull: 0.3,
-    saturation: [55, 92],
-    lightness: [35, 65],
+  kline: {
+    // Almost pure black and white -- hue barely matters once saturation
+    // is pinned this low, which is the point.
+    signatureHues: [0],
+    huePull: 0.1,
+    saturation: [0, 4],
+    lightness: [6, 94],
+  },
+  kelly: {
+    // Pure saturated primaries and secondaries -- red, orange, yellow,
+    // green, blue -- flat and confident, no muddying.
+    signatureHues: [5, 30, 50, 140, 220],
+    huePull: 0.65,
+    saturation: [65, 95],
+    lightness: [40, 65],
+  },
+  martin: {
+    // Pale tan, pale blue, pale pink -- barely-there washes behind a fine
+    // graphite grid.
+    signatureHues: [45, 200, 340],
+    huePull: 0.5,
+    saturation: [5, 20],
+    lightness: [75, 92],
+  },
+  marden: {
+    // Muted ochre, sage, and slate -- restrained, near-monochrome per
+    // piece, the color-field lineage carried into minimalism.
+    signatureHues: [30, 150, 200],
+    huePull: 0.85,
+    saturation: [20, 45],
+    lightness: [30, 60],
   },
 };
 
@@ -136,9 +116,11 @@ const COOL_ANCHOR = 218; // blue
  * major leans the whole palette brighter and a touch more saturated, minor
  * leans it darker and more muted, the same emotional shorthand major/minor
  * already carries for composers and listeners, confidence-scaled so an
- * ambiguous or just-started piece barely shifts. Picasso specifically eases
- * toward black-and-white on minor-key material -- evoking *Guernica* --
- * while keeping his usual analytic-cubist coloring for major-key passages.
+ * ambiguous or just-started piece barely shifts. **de Kooning** gets one
+ * further step: on minor-key material, his hot flesh/red/yellow palette
+ * eases toward black-and-white as confidence climbs -- evoking the stark
+ * black enamel paintings he turned to in the late 1940s -- while major-key
+ * pieces keep his usual heated coloring.
  */
 export function stylizeColor(
   raw: NoteColor,
@@ -175,6 +157,16 @@ export function stylizeColor(
   );
   lightness = clamp(lightness + theme.luminosity * 10, 8, 92);
 
+  if (styleId === "kline") {
+    // Push lightness toward the near-black/near-white extremes rather than
+    // the continuous mid-gray a straight linear map would give -- Kline's
+    // canvases read as stark black-on-white, not soft gray.
+    const [klMin, klMax] = preset.lightness;
+    const t = clamp((lightness - klMin) / (klMax - klMin), 0, 1);
+    const contrasted = t < 0.5 ? 0.5 * (2 * t) ** 1.8 : 1 - 0.5 * (2 * (1 - t)) ** 1.8;
+    lightness = klMin + contrasted * (klMax - klMin);
+  }
+
   if (key.mode === "major") {
     lightness = clamp(lightness + key.confidence * 9, 6, 94);
     saturation = clamp(saturation + key.confidence * 7, 0, 100);
@@ -182,7 +174,7 @@ export function stylizeColor(
     lightness = clamp(lightness - key.confidence * 9, 6, 94);
     saturation = clamp(saturation - key.confidence * 6, 0, 100);
 
-    if (styleId === "picasso") {
+    if (styleId === "dekooning") {
       // Ease toward grayscale as confidence in a minor key firms up,
       // rather than snapping the moment it crosses a threshold.
       const bw = clamp((key.confidence - 0.3) / 0.5, 0, 1);

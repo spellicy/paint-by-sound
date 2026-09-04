@@ -48,26 +48,26 @@ between notes (no snapping to fixed steps), plus a slow palette drift over
 the piece and per-stroke jitter, so the same note never paints quite the
 same way twice.
 
-### Ten painters, ten different techniques
+### Seven painters, seven different techniques
 
 Each style isn't just a different brush shape on a shared engine — it has
 its own **composition strategy** (how the simulated arm moves and how much
 of the canvas it uses) and its own **signature palette**
 (`src/paint/palettes.ts`), the way each painter actually worked, rather than
-one full-saturation rainbow applied uniformly to everyone:
+one full-saturation rainbow applied uniformly to everyone. The roster leans
+into postwar American abstraction — the New York School's gesture and
+color-field painting, and the painters who carried that lineage into
+minimalism:
 
 | Style | Composition | Palette |
 |---|---|---|
-| Kandinsky | Develops several focal "subject" areas across a wide grid | Bauhaus-era primaries: red, gold, blue, yellow, green |
-| Klee | Small organic dabs across evolving focal areas | Muted ochre, terracotta, teal, violet, olive |
-| Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Earthy umber and sienna, mostly desaturated, with a rare cadmium-red accent |
-| Picasso | Fragmented planes across focal areas | Analytic-cubist ochre, blue-grey, muted brown-red |
 | Rothko | The canvas divided into a few large horizontal **color fields**; pitch register selects which field a note reinforces, building soft-edged, full-bleed bands | Deep maroon, burnt orange, plum, mustard — luminous through layering, not raw brightness |
-| Renoir | Full-canvas roam with fuller, rounder, warmer dabs | Warm pink, peach, gold, soft green — dappled garden light |
-| Monet | Full-canvas roam, short broken-color strokes with occasional complementary flecks nearby for shimmer | Soft blue, lavender, pale green, light pink, pale gold |
-| Cézanne | Constructive hatched planes across focal areas — small parallel rectangular strokes at one of a few fixed angles, patched together | Muted structured naturalism: blue, green, ochre, terracotta |
-| Dalí | **Sparse** — most notes are skipped so the arm places only a few, well-separated forms across a mostly empty canvas, each a smooth melting droop with a long cast shadow | Warm desert sand and rust against a stark dream-sky blue |
-| Van Gogh | **Swirl** — a persistent, slowly-drifting curl (not random jitter) produces extended spiraling loops, like the sky in *Starry Night*; thick layered impasto strokes follow the arm's direction of travel | Bold complementary contrast: gold/yellow against deep blue, with a hot orange accent |
+| Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Earthy umber and sienna, mostly desaturated, with a rare cadmium-red accent |
+| de Kooning | Violent, slashing diagonal strokes with ragged torn edges across focal areas | Hot flesh pink, cadmium red and yellow against black and white |
+| Kline | **Sparse** — a handful of massive, hard-edged black-and-white bars across a mostly empty canvas, arm jumps between well-separated positions | Almost pure black and white, with a rare saturated accent |
+| Kelly | Fragmented flat forms across focal areas — one crisp, hard-edged shape per stroke, no blur or blending | Pure saturated primaries and secondaries: red, orange, yellow, green, blue |
+| Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale tan, pale blue, pale pink washes |
+| Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Muted, near-monochrome ochre, sage and slate per piece |
 
 ### Major and minor
 
@@ -77,17 +77,16 @@ the whole canvas brighter and a touch more saturated, minor-key material
 leans it darker and more muted — the same emotional shorthand major/minor
 already carries for composers and listeners, just applied to paint instead
 of the staff. It's confidence-scaled, so this eases in as the detector's
-guess firms up rather than snapping the moment a key is guessed. **Picasso**
-gets one further step: on minor-key material, his usual analytic-cubist
-ochre/blue-grey palette eases toward black-and-white as confidence climbs —
-evoking *Guernica*, the black-and-white political mural he turned to for his
-most anguished work — while major-key Picasso pieces keep his normal
-cubist coloring.
+guess firms up rather than snapping the moment a key is guessed. **de
+Kooning** gets one further step: on minor-key material, his usual hot flesh/
+red/yellow palette eases toward black-and-white as confidence climbs —
+evoking the stark black enamel paintings he turned to in the late 1940s —
+while major-key pieces keep his normal heated coloring.
 
-The gestural/geometric family (Kandinsky, Klee, Picasso, Pollock, Cézanne) is
-also phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which
-reads the arc of the music (loudness trend, onset density, how sustained or
-percussive things are) and puts the engine into one of four phases:
+The focal family (de Kooning, Kelly) plus Pollock is phase-aware via
+`PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
+music (loudness trend, onset density, how sustained or percussive things
+are) and puts the engine into one of four phases:
 
 - **Wash** — at the start, and again on major dynamic shifts, a soft
   translucent gradient sweep lays down an underpainting before any detail.
@@ -98,9 +97,9 @@ percussive things are) and puts the engine into one of four phases:
   accent brush style different from the base one, for percussive emphasis.
 - **Composing** — the default per-note stroke behavior.
 
-Rothko, Renoir, Monet, Dalí, and Van Gogh paint continuously in their own
-technique regardless of phase (that's how those painters actually worked),
-with loudness and onset density modulating intensity and size rather than
+Rothko, Kline, Martin, and Marden paint continuously in their own technique
+regardless of phase (that's how those painters actually worked), with
+loudness and onset density modulating intensity and size rather than
 switching modes.
 
 ### Inspiration: title and lyrics
@@ -123,10 +122,11 @@ primitives (a horizon line, a ridge of peaks, a stand of verticals, a
 sun/moon disc, a spiral...) and the paint engine blocks those in early in
 the piece, and keeps quietly nudging the composition back toward them for
 the rest of it, in the *current painter's own hand* — the same "seaside"
-horizon comes out as a Rothko color-field band, a row of Monet broken-color
-dabs, or a line of Van Gogh impasto, never as separate representational
-drawing code (`PaintEngine.paintMotifUnderlay`, `src/paint/motifs.ts`). It's
-a bias, not a template: the music-driven painting in `paintNote` keeps
+horizon comes out as a Rothko color-field band, a length of Marden's
+flowing line, or a row of Kline's bold bars, never as separate
+representational drawing code (`PaintEngine.paintMotifUnderlay`,
+`src/paint/motifs.ts`). It's a bias, not a template: the music-driven
+painting in `paintNote` keeps
 running exactly as before, layered on top. Pollock's genuinely all-over
 technique explicitly has no fixed subject (that's the whole point of
 Pollock), so it opts out of shape bias entirely and only picks up the

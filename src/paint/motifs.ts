@@ -4,9 +4,9 @@ import type { MotifPrimitive } from "../theme/subjects";
  * A single point in a subject's abstract underlying shape -- a place on the
  * canvas plus a suggested hue, size, and (for directional painters) heading.
  * These are handed to the *current painter's own* stroke renderer, so the
- * same "horizon" motif comes out as a Rothko color-field band, a row of
- * Monet broken-color dabs, or a line of Van Gogh impasto, never as its own
- * separate representational drawing code.
+ * same "horizon" motif comes out as a Rothko color-field band, a length of
+ * Marden's flowing line, or a bold Kline bar, never as its own separate
+ * representational drawing code.
  */
 export interface MotifMark {
   x: number;

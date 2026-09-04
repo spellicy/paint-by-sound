@@ -8,9 +8,9 @@ import { generateMotifMarks } from "./motifs";
 import {
   ALL_OVER_STYLES,
   FIELD_STYLES,
-  IMPRESSION_STYLES,
+  FLOW_STYLES,
+  GRID_STYLES,
   SPARSE_STYLES,
-  SWIRL_STYLES,
   type ArmCursor,
   type PaintStyleId,
 } from "./types";
@@ -47,7 +47,11 @@ function mulberry32(seed: number) {
   };
 }
 
-const ACCENT_STYLES: PaintStyleId[] = ["kandinsky", "klee", "pollock", "picasso", "cezanne"];
+// The two focal-family styles, plus Pollock, are interchangeable for a
+// rhythmic accent stroke -- all three are gestural enough that a stray
+// stroke in one of the others' techniques still reads as emphasis rather
+// than a jarring style break.
+const ACCENT_STYLES: PaintStyleId[] = ["dekooning", "kelly", "pollock"];
 
 const NEUTRAL_THEME: ThemeInfluence = {
   warmth: 0,
@@ -62,6 +66,8 @@ const NEUTRAL_THEME: ThemeInfluence = {
 };
 
 const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
+
+const GRID_ROWS = 34;
 
 interface RothkoBand {
   yStart: number;
@@ -82,8 +88,10 @@ export class PaintEngine {
   private focal: ArmCursor;
   private nextFocalShiftAt = 5;
   private roamHeading: number;
-  private swirlHeading: number;
-  private swirlCurl = 0;
+  private flowHeading: number;
+  private flowCurl = 0;
+  private gridRow = 0;
+  private gridX: number;
   private rothkoBands: RothkoBand[] = [];
   private rand: () => number;
   private phraseTracker = new PhraseTracker();
@@ -106,7 +114,8 @@ export class PaintEngine {
     this.focal = { ...this.cursor };
     this.rand = mulberry32(Date.now());
     this.roamHeading = this.rand() * Math.PI * 2;
-    this.swirlHeading = this.rand() * Math.PI * 2;
+    this.flowHeading = this.rand() * Math.PI * 2;
+    this.gridX = opts.canvas.width * 0.02;
     this.onNoteRendered = opts.onNoteRendered;
   }
 
@@ -141,8 +150,10 @@ export class PaintEngine {
     this.focal = { ...this.cursor };
     this.nextFocalShiftAt = 5;
     this.roamHeading = this.rand() * Math.PI * 2;
-    this.swirlHeading = this.rand() * Math.PI * 2;
-    this.swirlCurl = 0;
+    this.flowHeading = this.rand() * Math.PI * 2;
+    this.flowCurl = 0;
+    this.gridRow = 0;
+    this.gridX = this.canvas.width * 0.02;
     this.rothkoBands = [];
     this.phraseTracker.reset();
     this.lastWashAt = -Infinity;
@@ -182,10 +193,10 @@ export class PaintEngine {
   // Composition: each painter family moves the simulated "arm" differently.
   // ---------------------------------------------------------------------
 
-  /** Kandinsky / Klee / Picasso: develop a handful of focal "subject" areas
-   * across a wide grid, rather than scanning uniformly -- so a full track
-   * ends up visiting most of the canvas while still building up
-   * compositions around areas of interest. */
+  /** de Kooning / Kelly: develop a handful of focal "subject" areas across
+   * a wide grid, rather than scanning uniformly -- so a full track ends up
+   * visiting most of the canvas while still building up compositions
+   * around areas of interest. */
   private retargetFocal() {
     const { width, height } = this.canvas;
     const xFifths = [0.12, 0.3, 0.5, 0.7, 0.88];
@@ -283,50 +294,73 @@ export class PaintEngine {
     this.cursor.y = ny;
   }
 
-  /** Van Gogh: a continuous curling sweep, like `updateRoamCursor` but with
-   * a persistent, slowly-drifting curl rate instead of random jitter --
-   * the arm holds a curve for a while before it drifts, producing extended
-   * spiraling loops (Starry Night's sky) rather than a jagged random walk. */
-  private updateSwirlCursor(frequency: number, amplitude: number) {
+  /** Martin: a fine, hand-ruled grid built up row by row at a slow,
+   * unvarying pace -- the arm sweeps steadily left to right along one row,
+   * wraps to the next when it reaches the edge, and barely deviates in
+   * speed or spacing regardless of the music's energy. Meditative
+   * repetition, not reaction. */
+  private updateGridCursor(amplitude: number) {
+    const { width, height } = this.canvas;
+    const step = width * (0.012 + amplitude * 0.01);
+    this.gridX += step;
+    if (this.gridX > width * 0.98) {
+      this.gridX = width * 0.02;
+      this.gridRow = (this.gridRow + 1) % GRID_ROWS;
+    }
+    const rowY = height * (0.04 + (this.gridRow / (GRID_ROWS - 1)) * 0.92);
+
+    // A very light touch -- her grids don't bend toward a subject, but a
+    // faint pull keeps a named subject's silhouette barely present as a
+    // shift in which rows read slightly warmer or cooler.
+    const biased = this.biasTowardMotif(this.gridX, rowY, this.theme.motifStrength * 0.05);
+    this.cursor.x = biased.x;
+    this.cursor.y = rowY + (biased.y - rowY) * 0.25 + (this.rand() - 0.5) * 1.5;
+  }
+
+  /** Marden: a continuous, unhurried curling sweep -- like Pollock's roam
+   * but with a slowly, gently drifting curl instead of sharp random turns,
+   * and edges that ease the line back toward center instead of bouncing --
+   * producing the long, sinuous single-line loops of his later work rather
+   * than a jagged or energetic path. */
+  private updateFlowCursor(frequency: number, amplitude: number) {
     const { width, height } = this.canvas;
     const turbulence = this.theme.turbulence;
 
-    this.swirlCurl = clamp(
-      this.swirlCurl + (this.rand() - 0.5) * 0.012 * (1 + turbulence),
-      -0.22,
-      0.22,
+    this.flowCurl = clamp(
+      this.flowCurl + (this.rand() - 0.5) * 0.011 * (1 + turbulence),
+      -0.2,
+      0.2,
     );
-    this.swirlHeading += this.swirlCurl;
+    this.flowHeading += this.flowCurl;
     if (frequency > 0) {
       const midi = 69 + 12 * Math.log2(frequency / 440);
       const norm = clamp((midi - 40) / 60, 0, 1);
-      this.swirlHeading += (norm - 0.5) * 0.04;
+      this.flowHeading += (norm - 0.5) * 0.02;
     }
 
-    const step = 7 + amplitude * 26;
-    let nx = this.cursor.x + Math.cos(this.swirlHeading) * step;
-    let ny = this.cursor.y + Math.sin(this.swirlHeading) * step;
+    const step = 5 + amplitude * 16;
+    let nx = this.cursor.x + Math.cos(this.flowHeading) * step;
+    let ny = this.cursor.y + Math.sin(this.flowHeading) * step;
 
     // A light touch here -- too strong a pull fights the curl and breaks
-    // the loops up into jagged corrections instead of coherent spirals.
+    // the loops up into jagged corrections instead of coherent curves.
     const biased = this.biasTowardMotif(nx, ny, this.theme.motifStrength * 0.04);
     nx = biased.x;
     ny = biased.y;
 
-    const minX = width * 0.04;
-    const maxX = width * 0.96;
-    const minY = height * 0.04;
-    const maxY = height * 0.96;
+    const minX = width * 0.05;
+    const maxX = width * 0.95;
+    const minY = height * 0.05;
+    const maxY = height * 0.95;
     if (nx < minX || nx > maxX || ny < minY || ny > maxY) {
-      // Rather than a hard mirror bounce (which reads as a jagged, violent
-      // reversal), ease the heading back toward the canvas center -- the
-      // curve keeps flowing instead of snapping, so loops stay coherent
-      // even as the arm wanders near an edge.
+      // Ease the heading back toward the canvas center rather than a hard
+      // bounce, which would read as a jagged, violent reversal -- the
+      // curve keeps flowing instead of snapping.
       const cx = width / 2;
       const cy = height / 2;
       const toCenter = Math.atan2(cy - ny, cx - nx);
-      this.swirlHeading = toCenter + (this.rand() - 0.5) * 0.6;
-      this.swirlCurl *= 0.4;
+      this.flowHeading = toCenter + (this.rand() - 0.5) * 0.3;
+      this.flowCurl *= 0.4;
       nx = clamp(nx, minX, maxX);
       ny = clamp(ny, minY, maxY);
     }
@@ -334,18 +368,16 @@ export class PaintEngine {
     this.cursor.y = ny;
   }
 
-  /** Dali: the arm jumps to a new, well-separated position across a mostly
-   * empty canvas -- a few precisely placed forms on a barren field, rather
+  /** Kline: the arm jumps to a new, well-separated position across a
+   * mostly empty canvas -- a handful of massive architectural bars rather
    * than continuous coverage. Combined with paintNote's onset-only gating,
    * this keeps the composition sparse over a full track. */
   private updateSparseCursor() {
     const { width, height } = this.canvas;
-    // A named subject still reads as only a few, well-separated forms, not
+    // A named subject still reads as only a few, well-separated bars, not
     // continuous coverage -- so instead of a continuous positional bias
     // (which would fight the "jump to a new spot" character), occasionally
-    // let one of those few forms land squarely on the subject's shape, the
-    // way Dali placed a handful of uncanny objects within an evocative
-    // landscape.
+    // let one of those few bars land squarely on the subject's shape.
     if (this.motifAnchors.length && this.rand() < this.theme.motifStrength * 0.6) {
       const a = this.motifAnchors[Math.floor(this.rand() * this.motifAnchors.length)];
       this.cursor = {
@@ -428,7 +460,7 @@ export class PaintEngine {
   /** Sustained, tonal passages are drawn as one continuous flowing line
    * tracing the melodic contour, rather than a stamp per note -- painting
    * reacting to the melody instead of to each isolated note. Used by the
-   * gestural/geometric family (Kandinsky, Klee, Picasso, Pollock). */
+   * phase-aware focal family (de Kooning, Kelly) and Pollock. */
   private renderMelodicSegment(note: NoteEvent, color: NoteColor) {
     const width = 1 + note.amplitude * 5;
     if (this.lastMelodic && note.time - this.lastMelodic.time < 0.7) {
@@ -477,13 +509,13 @@ export class PaintEngine {
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
    * waves) gets blocked in once, early in the piece, in the current
    * painter's own hand -- the same points handed to Rothko become a color-
-   * field band, to Monet a row of broken-color dabs, to Van Gogh a line of
-   * impasto strokes. This only ever lays a loose underlying composition;
-   * the music-driven painting in paintNote continues over it exactly as
-   * before. Pollock's all-over technique explicitly rejects a fixed
-   * subject (see ALL_OVER_STYLES), so it's skipped there on purpose -- the
-   * subject still leans the palette via the existing warmth/hueRotation
-   * channels, just never an explicit shape. */
+   * field band, to Marden a length of flowing line, to Kline a bold bar.
+   * This only ever lays a loose underlying composition; the music-driven
+   * painting in paintNote continues over it exactly as before. Pollock's
+   * all-over technique explicitly rejects a fixed subject (see
+   * ALL_OVER_STYLES), so it's skipped there on purpose -- the subject
+   * still leans the palette via the existing warmth/hueRotation channels,
+   * just never an explicit shape. */
   private paintMotifUnderlay() {
     if (this.motifPainted) return;
     this.motifPainted = true;
@@ -498,14 +530,15 @@ export class PaintEngine {
     // itself over the whole piece instead of only at the very start.
     this.motifAnchors = marks.map((m) => ({ x: m.x, y: m.y }));
     if (SPARSE_STYLES.includes(this.styleId)) {
-      // Dali: a subject still reads as only a few, well-separated forms,
-      // never continuous coverage -- thin the mark set to match.
+      // Kline: a subject still reads as only a few, massive, well-
+      // separated bars, never continuous coverage -- thin the mark set to
+      // match.
       marks = marks.filter((_, i) => i % 4 === 0);
     }
 
     const isField = FIELD_STYLES.includes(this.styleId);
     if (isField) this.ensureRothkoBands();
-    const isSwirl = SWIRL_STYLES.includes(this.styleId);
+    const isFlow = FLOW_STYLES.includes(this.styleId);
 
     for (const mark of marks) {
       const rawColor = makeRawColor(
@@ -533,7 +566,7 @@ export class PaintEngine {
           note,
           color,
           rand: this.rand,
-          heading: isSwirl ? (mark.heading ?? this.swirlHeading) : mark.heading,
+          heading: isFlow ? (mark.heading ?? this.flowHeading) : mark.heading,
         });
       }
     }
@@ -543,10 +576,10 @@ export class PaintEngine {
     const phrase = this.phraseTracker.update(note);
     const isAllOver = ALL_OVER_STYLES.includes(this.styleId);
     const isField = FIELD_STYLES.includes(this.styleId);
-    const isImpression = IMPRESSION_STYLES.includes(this.styleId);
-    const isSwirl = SWIRL_STYLES.includes(this.styleId);
+    const isGrid = GRID_STYLES.includes(this.styleId);
+    const isFlow = FLOW_STYLES.includes(this.styleId);
     const isSparse = SPARSE_STYLES.includes(this.styleId);
-    // Dali: skip most notes entirely so forms stay few and well-separated
+    // Kline: skip most notes entirely so bars stay few and well-separated
     // across the canvas, rather than accumulating into continuous coverage.
     const sparseSkip = isSparse && !(note.isOnset || this.rand() < 0.15);
 
@@ -556,11 +589,10 @@ export class PaintEngine {
         this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
       } else if (isField) {
         rothkoBand = this.updateRothkoCursor(note.frequency);
-      } else if (isImpression) {
-        const stepScale = this.styleId === "monet" ? 0.32 : 0.4;
-        this.updateRoamCursor(note.frequency, note.amplitude, stepScale, 1.9);
-      } else if (isSwirl) {
-        this.updateSwirlCursor(note.frequency, note.amplitude);
+      } else if (isGrid) {
+        this.updateGridCursor(note.amplitude);
+      } else if (isFlow) {
+        this.updateFlowCursor(note.frequency, note.amplitude);
       } else if (isSparse) {
         this.updateSparseCursor();
       } else {
@@ -594,7 +626,7 @@ export class PaintEngine {
     if (!sparseSkip) {
       if (isField && rothkoBand) {
         this.renderRothkoField(note, rothkoBand, color);
-      } else if (isImpression || isSwirl || isSparse) {
+      } else if (isGrid || isFlow || isSparse) {
         // These families always paint in their own technique, regardless of
         // musical phase -- that's how those painters actually worked.
         renderStroke(this.styleId, {
@@ -605,7 +637,7 @@ export class PaintEngine {
           note,
           color,
           rand: this.rand,
-          heading: isSwirl ? this.swirlHeading : undefined,
+          heading: isFlow ? this.flowHeading : undefined,
         });
       } else if (phrase.phase === "melodic") {
         this.renderMelodicSegment(note, color);

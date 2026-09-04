@@ -8,8 +8,8 @@
  * landscape painter might block in before the music takes over: a horizon
  * line, a ridge of peaks, a stand of verticals. Which painter is selected
  * still decides how those primitives actually get marked down -- the same
- * "seaside" horizon reads as a Rothko color-field band, a string of Monet
- * broken-color dabs, or a row of Van Gogh impasto strokes.
+ * "seaside" horizon reads as a Rothko color-field band, a length of
+ * Marden's flowing line, or a row of Kline's bold bars.
  */
 
 export type MotifPrimitive =
