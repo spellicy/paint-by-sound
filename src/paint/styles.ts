@@ -131,29 +131,63 @@ const dekooning: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
-const KLINE_ANGLES = [0, Math.PI / 2, Math.PI / 6, -Math.PI / 5];
-
-const kline: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // A few massive, hard-edged bars -- almost always the palette's near-
-  // black/near-white extremes, laid down with total commitment and no
-  // blur or blending, the way Kline built a composition from a handful of
-  // architectural strokes rather than accumulated small marks.
-  const len = 40 + note.amplitude * 140;
-  const w = 8 + note.amplitude * 26;
-  const angle = KLINE_ANGLES[Math.floor(rand() * KLINE_ANGLES.length)];
-  const isAccent = rand() < 0.08;
+const schiele: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // A sharp, nervous contour -- angular segments with sudden elbow-like
+  // direction changes rather than a fluid curve, the way a figure got
+  // built from a few confident, searching pencil/ink strokes. Color
+  // never fills the shape evenly: a dense band hugs the line and thins
+  // to a veil moving inward, most of the canvas left bare -- his sparse
+  // backgrounds push all the pressure onto the contour itself.
+  const len = 10 + note.amplitude * 46;
+  const segments = 3 + Math.floor(rand() * 3);
+  const inkWidth = 0.8 + note.amplitude * 1.4;
 
   ctx.save();
   ctx.translate(cursor.x, cursor.y);
-  ctx.rotate(angle + (rand() - 0.5) * 0.15);
-  ctx.lineCap = "square";
-  ctx.strokeStyle = isAccent
-    ? `hsla(${color.hue.toFixed(1)}, 70%, 45%, 0.85)`
-    : color.rgba(0.92);
-  ctx.lineWidth = w;
+  ctx.rotate(rand() * TAU);
+
+  const points: { x: number; y: number }[] = [{ x: -len / 2, y: 0 }];
+  let heading = 0;
+  for (let i = 0; i < segments; i++) {
+    heading += (rand() - 0.5) * 2.4; // sharp elbows, not smooth curves
+    const segLen = (len / segments) * (0.7 + rand() * 0.6);
+    const prev = points[points.length - 1];
+    points.push({
+      x: prev.x + Math.cos(heading) * segLen,
+      y: prev.y + Math.sin(heading) * segLen,
+    });
+  }
+
+  // The wash: strongest right at the contour, fading with each offset
+  // pass to one side -- never a flat, evenly-filled shape.
+  const side = rand() < 0.5 ? 1 : -1;
+  for (let pass = 0; pass < 3; pass++) {
+    const off = side * (pass * 1.6 + 1);
+    const alpha = (0.4 - pass * 0.12) * (0.6 + note.amplitude * 0.5);
+    if (alpha <= 0) continue;
+    ctx.strokeStyle = color.rgba(alpha);
+    ctx.lineWidth = inkWidth * (2.2 - pass * 0.5);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y + off);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y + off);
+    }
+    ctx.stroke();
+  }
+
+  // The confident ink contour, drawn last so it stays crisp over the
+  // softer wash beneath it.
+  ctx.strokeStyle = `rgba(28, 20, 16, ${(0.75 + rand() * 0.2).toFixed(2)})`;
+  ctx.lineWidth = inkWidth;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(-len / 2, 0);
-  ctx.lineTo(len / 2, 0);
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
   ctx.stroke();
   ctx.restore();
 };
@@ -238,7 +272,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   rothko,
   pollock,
   dekooning,
-  kline,
+  schiele,
   kelly,
   martin,
   marden,

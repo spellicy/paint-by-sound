@@ -54,17 +54,17 @@ Each style isn't just a different brush shape on a shared engine — it has
 its own **composition strategy** (how the simulated arm moves and how much
 of the canvas it uses) and its own **signature palette**
 (`src/paint/palettes.ts`), the way each painter actually worked, rather than
-one full-saturation rainbow applied uniformly to everyone. The roster leans
-into postwar American abstraction — the New York School's gesture and
-color-field painting, and the painters who carried that lineage into
-minimalism:
+one full-saturation rainbow applied uniformly to everyone. The roster spans
+raw, emotionally-driven mark-making across a century — Schiele's anxious
+Viennese Expressionism, the New York School's gesture and color-field
+painting, and the painters who carried that lineage into minimalism:
 
 | Style | Composition | Palette |
 |---|---|---|
 | Rothko | The canvas divided into a few large horizontal **color fields**; pitch register selects which field a note reinforces, building soft-edged, full-bleed bands | Deep maroon, burnt orange, plum, mustard — luminous through layering, not raw brightness |
 | Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Earthy umber and sienna, mostly desaturated, with a rare cadmium-red accent |
 | de Kooning | Two or three slashing strokes piled up in different directions per mark, overlaid with an independent looping black contour line and a palette-knife scrape, across focal areas | Hot flesh pink, cadmium red and yellow, clashing with whatever cool leftover a pitch's hue doesn't share with that warm cluster |
-| Kline | **Sparse** — a handful of massive, hard-edged black-and-white bars across a mostly empty canvas, arm jumps between well-separated positions | Almost pure black and white, with a rare saturated accent |
+| Schiele | **Sparse** — a handful of isolated, angular contour marks across a mostly bare canvas, arm jumps between well-separated positions; each mark is a nervous multi-segment line with sharp elbows, never a smooth curve | Muted burnt red-orange, ochre and sickly olive, applied as a wash that hugs the contour and thins moving inward rather than filling evenly |
 | Kelly | Fragmented flat forms across focal areas — one crisp, hard-edged shape per stroke, no blur or blending | Pure saturated primaries and secondaries: red, orange, yellow, green, blue |
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale tan, pale blue, pale pink washes |
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Muted, near-monochrome ochre, sage and slate per piece |
@@ -97,7 +97,7 @@ are) and puts the engine into one of four phases:
   accent brush style different from the base one, for percussive emphasis.
 - **Composing** — the default per-note stroke behavior.
 
-Rothko, Kline, Martin, and Marden paint continuously in their own technique
+Rothko, Schiele, Martin, and Marden paint continuously in their own technique
 regardless of phase (that's how those painters actually worked), with
 loudness and onset density modulating intensity and size rather than
 switching modes.
@@ -123,7 +123,7 @@ sun/moon disc, a spiral...) and the paint engine blocks those in early in
 the piece, and keeps quietly nudging the composition back toward them for
 the rest of it, in the *current painter's own hand* — the same "seaside"
 horizon comes out as a Rothko color-field band, a length of Marden's
-flowing line, or a row of Kline's bold bars, never as separate
+flowing line, or a scatter of Schiele's isolated contours, never as separate
 representational drawing code (`PaintEngine.paintMotifUnderlay`,
 `src/paint/motifs.ts`). It's a bias, not a template: the music-driven
 painting in `paintNote` keeps

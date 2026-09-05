@@ -5,7 +5,7 @@ import type { MotifPrimitive } from "../theme/subjects";
  * canvas plus a suggested hue, size, and (for directional painters) heading.
  * These are handed to the *current painter's own* stroke renderer, so the
  * same "horizon" motif comes out as a Rothko color-field band, a length of
- * Marden's flowing line, or a bold Kline bar, never as its own separate
+ * Marden's flowing line, or an isolated Schiele contour, never as its own separate
  * representational drawing code.
  */
 export interface MotifMark {

@@ -7,8 +7,8 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 
 /**
  * Each painter worked with a limited, characteristic palette -- Rothko's
- * handful of deep, luminous field colors; Kline's near-total black and
- * white; Kelly's pure saturated flats. This is the opposite of one full-
+ * handful of deep, luminous field colors; Schiele's muted earth and flesh
+ * tones; Kelly's pure saturated flats. This is the opposite of one full-
  * saturation rainbow hue wheel applied uniformly to every style, which is
  * what made every painting look the same neon regardless of who was
  * "painting."
@@ -56,13 +56,14 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [40, 80],
     lightness: [28, 68],
   },
-  kline: {
-    // Almost pure black and white -- hue barely matters once saturation
-    // is pinned this low, which is the point.
-    signatureHues: [0],
-    huePull: 0.1,
-    saturation: [0, 4],
-    lightness: [6, 94],
+  schiele: {
+    // Burnt red-orange, ochre, and a sickly olive green -- muted and
+    // restrained rather than vivid, punctuated by rich reds and earthy
+    // browns against a mostly bare, pale ground.
+    signatureHues: [15, 35, 90],
+    huePull: 0.55,
+    saturation: [20, 50],
+    lightness: [26, 64],
   },
   kelly: {
     // Pure saturated primaries and secondaries -- red, orange, yellow,
@@ -161,16 +162,6 @@ export function stylizeColor(
     litMax,
   );
   lightness = clamp(lightness + theme.luminosity * 10, 8, 92);
-
-  if (styleId === "kline") {
-    // Push lightness toward the near-black/near-white extremes rather than
-    // the continuous mid-gray a straight linear map would give -- Kline's
-    // canvases read as stark black-on-white, not soft gray.
-    const [klMin, klMax] = preset.lightness;
-    const t = clamp((lightness - klMin) / (klMax - klMin), 0, 1);
-    const contrasted = t < 0.5 ? 0.5 * (2 * t) ** 1.8 : 1 - 0.5 * (2 * (1 - t)) ** 1.8;
-    lightness = klMin + contrasted * (klMax - klMin);
-  }
 
   if (key.mode === "major") {
     lightness = clamp(lightness + key.confidence * 9, 6, 94);

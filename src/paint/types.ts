@@ -5,7 +5,7 @@ export type PaintStyleId =
   | "rothko"
   | "pollock"
   | "dekooning"
-  | "kline"
+  | "schiele"
   | "kelly"
   | "martin"
   | "marden";
@@ -33,9 +33,9 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     blurb: "Violent, slashing figurative gesture -- emotion over form.",
   },
   {
-    id: "kline",
-    label: "Kline",
-    blurb: "Bold black-and-white architectural gestural bars.",
+    id: "schiele",
+    label: "Schiele",
+    blurb: "Nervous angular contours, raw color hugging the line.",
   },
   {
     id: "kelly",
@@ -58,7 +58,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
 export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
 export const FOCAL_STYLES: PaintStyleId[] = ["dekooning", "kelly"];
-export const SPARSE_STYLES: PaintStyleId[] = ["kline"];
+export const SPARSE_STYLES: PaintStyleId[] = ["schiele"];
 export const GRID_STYLES: PaintStyleId[] = ["martin"];
 export const FLOW_STYLES: PaintStyleId[] = ["marden"];
 
