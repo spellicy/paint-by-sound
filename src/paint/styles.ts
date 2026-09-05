@@ -58,37 +58,73 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
 };
 
 const dekooning: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // Thick, slashing diagonal strokes with a ragged, torn edge -- the
-  // aggressive knife-and-brush attack of the Woman series, built from
-  // violent gesture rather than careful modeling.
+  // The Woman-series attack: color rarely goes down as one clean stroke --
+  // two or three slashing passes pile up in different directions, fighting
+  // each other, before a loose black contour line loops across the whole
+  // thing independently (his outline famously "continues in loops and
+  // streaks and drips, taking on a life of its own"), and a palette-knife
+  // scrape tears back through wherever paint was applied and dragged away.
   const len = 14 + note.amplitude * 60;
-  const angle = (rand() - 0.5) * Math.PI * 0.9 - Math.PI / 4;
   const width = 3 + note.amplitude * 14;
 
   ctx.save();
   ctx.translate(cursor.x, cursor.y);
-  ctx.rotate(angle);
   ctx.lineCap = "round";
-  ctx.strokeStyle = color.rgba(0.75 + rand() * 0.2);
-  ctx.lineWidth = width;
-  ctx.beginPath();
-  ctx.moveTo(-len / 2, (rand() - 0.5) * width * 0.8);
-  ctx.quadraticCurveTo(
-    (rand() - 0.5) * len * 0.4,
-    (rand() - 0.5) * width * 1.6,
-    len / 2,
-    (rand() - 0.5) * width * 0.8,
-  );
-  ctx.stroke();
+
+  const passes = rand() < 0.4 ? 3 : 2;
+  for (let i = 0; i < passes; i++) {
+    const angle = (rand() - 0.5) * Math.PI * 1.1 - Math.PI / 4;
+    const passLen = len * (0.55 + rand() * 0.6);
+    const passWidth = width * (0.5 + rand() * 0.7);
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.strokeStyle = color.rgba(0.5 + rand() * 0.35);
+    ctx.lineWidth = passWidth;
+    ctx.beginPath();
+    ctx.moveTo(-passLen / 2, (rand() - 0.5) * passWidth);
+    ctx.quadraticCurveTo(
+      (rand() - 0.5) * passLen * 0.5,
+      (rand() - 0.5) * passWidth * 2,
+      passLen / 2,
+      (rand() - 0.5) * passWidth,
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (rand() < 0.65) {
+    // The signature black contour: a loose, independent looping line laid
+    // over the color passes, tapering thin-to-thick and occasionally
+    // trailing a short drip off its tail.
+    const lineAngle = rand() * TAU;
+    const loopLen = len * (0.7 + rand() * 0.5);
+    ctx.save();
+    ctx.rotate(lineAngle);
+    ctx.strokeStyle = `rgba(18, 15, 13, ${(0.55 + rand() * 0.3).toFixed(2)})`;
+    ctx.lineWidth = 1 + note.amplitude * 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(loopLen * 0.3, -loopLen * 0.4, loopLen * 0.6, loopLen * 0.15);
+    ctx.quadraticCurveTo(loopLen * 0.75, loopLen * 0.4, loopLen * 0.5, loopLen * 0.55);
+    ctx.stroke();
+    if (rand() < 0.4) {
+      ctx.beginPath();
+      ctx.moveTo(loopLen * 0.5, loopLen * 0.55);
+      ctx.lineTo(loopLen * 0.5 + (rand() - 0.5) * 3, loopLen * 0.55 + 4 + rand() * 8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   if (rand() < 0.5) {
-    // A jagged fragment torn across the stroke -- a sharp scrape rather
-    // than a smooth blend, echoing the palette-knife cuts in his surfaces.
-    ctx.fillStyle = rand() < 0.5 ? "rgba(20, 16, 14, 0.55)" : "rgba(250, 246, 238, 0.5)";
+    // A scraped patch -- palette-knife texture where color was applied
+    // and dragged away rather than smoothly blended.
+    ctx.fillStyle = rand() < 0.5 ? "rgba(20, 16, 14, 0.4)" : "rgba(250, 246, 238, 0.35)";
     ctx.beginPath();
     ctx.moveTo(-len * 0.2, -width);
     ctx.lineTo(len * 0.25, -width * 0.3);
-    ctx.lineTo(len * 0.1, width * 0.9);
+    ctx.lineTo(len * 0.15, width * 0.7);
+    ctx.lineTo(-len * 0.1, width * 0.9);
     ctx.closePath();
     ctx.fill();
   }

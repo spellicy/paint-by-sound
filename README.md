@@ -63,7 +63,7 @@ minimalism:
 |---|---|---|
 | Rothko | The canvas divided into a few large horizontal **color fields**; pitch register selects which field a note reinforces, building soft-edged, full-bleed bands | Deep maroon, burnt orange, plum, mustard — luminous through layering, not raw brightness |
 | Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Earthy umber and sienna, mostly desaturated, with a rare cadmium-red accent |
-| de Kooning | Violent, slashing diagonal strokes with ragged torn edges across focal areas | Hot flesh pink, cadmium red and yellow against black and white |
+| de Kooning | Two or three slashing strokes piled up in different directions per mark, overlaid with an independent looping black contour line and a palette-knife scrape, across focal areas | Hot flesh pink, cadmium red and yellow, clashing with whatever cool leftover a pitch's hue doesn't share with that warm cluster |
 | Kline | **Sparse** — a handful of massive, hard-edged black-and-white bars across a mostly empty canvas, arm jumps between well-separated positions | Almost pure black and white, with a rare saturated accent |
 | Kelly | Fragmented flat forms across focal areas — one crisp, hard-edged shape per stroke, no blur or blending | Pure saturated primaries and secondaries: red, orange, yellow, green, blue |
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale tan, pale blue, pale pink washes |

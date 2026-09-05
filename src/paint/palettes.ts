@@ -45,12 +45,16 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [10, 46],
   },
   dekooning: {
-    // Flesh pink, cadmium red and yellow against black and white -- the
-    // hot, agitated palette of the Woman paintings.
+    // Flesh pink, cadmium red and yellow -- tightly clustered warm
+    // anchors, dominant but not absolute: a moderate pull leaves whatever
+    // a note's raw pitch-hue doesn't share with that warm cluster
+    // showing through as leftover cool clash (blue, green), rather than
+    // handing an entire zone of the wheel over to one dedicated accent
+    // anchor, which read as far too much cyan/blue in practice.
     signatureHues: [350, 20, 50],
-    huePull: 0.35,
-    saturation: [35, 75],
-    lightness: [30, 68],
+    huePull: 0.45,
+    saturation: [40, 80],
+    lightness: [28, 68],
   },
   kline: {
     // Almost pure black and white -- hue barely matters once saturation
