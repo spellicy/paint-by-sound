@@ -372,13 +372,14 @@ export class PaintEngine {
     this.cursor.y = ny;
   }
 
-  /** Kline: the arm jumps to a new, well-separated position across a
-   * mostly empty canvas -- a handful of massive architectural bars rather
-   * than continuous coverage. Combined with paintNote's onset-only gating,
-   * this keeps the composition sparse over a full track. */
+  /** Schiele: the arm jumps to a new, well-separated position across a
+   * mostly empty canvas -- a handful of isolated figures against bare
+   * ground rather than continuous coverage. Combined with paintNote's
+   * onset-only gating, this keeps the composition sparse over a full
+   * track. */
   private updateSparseCursor() {
     const { width, height } = this.canvas;
-    // A named subject still reads as only a few, well-separated bars, not
+    // A named subject still reads as only a few, well-separated marks, not
     // continuous coverage -- so instead of a continuous positional bias
     // (which would fight the "jump to a new spot" character), occasionally
     // let one of those few bars land squarely on the subject's shape.
@@ -513,7 +514,8 @@ export class PaintEngine {
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
    * waves) gets blocked in once, early in the piece, in the current
    * painter's own hand -- the same points handed to Rothko become a color-
-   * field band, to Marden a length of flowing line, to Kline a bold bar.
+   * field band, to Marden a length of flowing line, to Schiele an isolated
+   * angular contour.
    * This only ever lays a loose underlying composition; the music-driven
    * painting in paintNote continues over it exactly as before. Pollock's
    * all-over technique explicitly rejects a fixed subject (see
@@ -534,8 +536,8 @@ export class PaintEngine {
     // itself over the whole piece instead of only at the very start.
     this.motifAnchors = marks.map((m) => ({ x: m.x, y: m.y }));
     if (SPARSE_STYLES.includes(this.styleId)) {
-      // Kline: a subject still reads as only a few, massive, well-
-      // separated bars, never continuous coverage -- thin the mark set to
+      // Schiele: a subject still reads as only a few, isolated marks
+      // against bare ground, never continuous coverage -- thin the mark set to
       // match.
       marks = marks.filter((_, i) => i % 4 === 0);
     }
@@ -583,7 +585,7 @@ export class PaintEngine {
     const isGrid = GRID_STYLES.includes(this.styleId);
     const isFlow = FLOW_STYLES.includes(this.styleId);
     const isSparse = SPARSE_STYLES.includes(this.styleId);
-    // Kline: skip most notes entirely so bars stay few and well-separated
+    // Schiele: skip most notes entirely so marks stay few and well-separated
     // across the canvas, rather than accumulating into continuous coverage.
     const sparseSkip = isSparse && !(note.isOnset || this.rand() < 0.15);
 

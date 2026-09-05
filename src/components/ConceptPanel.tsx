@@ -23,8 +23,8 @@ export function ConceptPanel() {
             AI-driven exhibit where a robotic arm paints abstract, modern-art canvases
             live, guided entirely by music &mdash; notes mapped to color and palette,
             rhythm and dynamics mapped to brushstroke and gesture, in the spirit of
-            Rothko, Pollock, de Kooning and the postwar painters who carried
-            abstraction from gesture and color-field into minimalism.
+            Schiele, Rothko, Pollock, de Kooning and the painters who pushed
+            color and gesture toward raw emotional extremes.
           </p>
           <p>
             This app is a browser-based simulator of that idea: it listens to whatever

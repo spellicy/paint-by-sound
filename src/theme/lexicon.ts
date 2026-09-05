@@ -35,7 +35,7 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   scream: { warmth: -0.1, luminosity: -0.5, turbulence: 0.9, style: "dekooning" },
   broken: { warmth: -0.2, luminosity: -0.4, turbulence: 0.8, style: "dekooning" },
   shatter: { warmth: -0.1, luminosity: -0.2, turbulence: 0.9, style: "dekooning" },
-  machine: { warmth: -0.3, luminosity: -0.2, turbulence: 0.6, style: "kline" },
+  machine: { warmth: -0.3, luminosity: -0.2, turbulence: 0.6, style: "dekooning" },
   riot: { warmth: 0.3, luminosity: -0.3, turbulence: 1, style: "pollock" },
 
   // Calm / stillness / melancholy -- Rothko's luminous, brooding fields
@@ -113,9 +113,9 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   cosmic: { warmth: -0.1, luminosity: 0.2, turbulence: 0.3, style: "marden" },
   universe: { warmth: -0.1, luminosity: 0.2, turbulence: 0.3, style: "marden" },
 
-  // Musical grandeur -- Kline's bold, dynamic architectural bars
-  concerto: { warmth: 0, luminosity: 0.2, turbulence: 0.3, style: "kline" },
-  symphony: { warmth: 0, luminosity: 0.3, turbulence: 0.4, style: "kline" },
+  // Musical grandeur -- Rothko's immersive, symphonic scale
+  concerto: { warmth: 0, luminosity: 0.2, turbulence: 0.3, style: "rothko" },
+  symphony: { warmth: 0, luminosity: 0.3, turbulence: 0.4, style: "rothko" },
 
   // Geometric / playful -- Kelly's clean hard-edged shapes
   geometry: { warmth: 0, luminosity: 0.1, turbulence: 0.2, style: "kelly" },
@@ -126,12 +126,24 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   toy: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3, style: "kelly" },
   puzzle: { warmth: 0.1, luminosity: 0.2, turbulence: 0.2, style: "kelly" },
 
-  // Industrial / urban / architectural -- Kline's bold black bars
-  city: { warmth: -0.1, luminosity: -0.1, turbulence: 0.4, style: "kline" },
-  street: { warmth: 0, luminosity: -0.1, turbulence: 0.35, style: "kline" },
-  steel: { warmth: -0.3, luminosity: -0.1, turbulence: 0.4, style: "kline" },
-  factory: { warmth: -0.2, luminosity: -0.2, turbulence: 0.5, style: "kline" },
-  concrete: { warmth: -0.2, luminosity: -0.2, turbulence: 0.3, style: "kline" },
+  // Industrial / urban / architectural -- Kelly's hard-edged flat forms
+  city: { warmth: -0.1, luminosity: -0.1, turbulence: 0.4, style: "kelly" },
+  street: { warmth: 0, luminosity: -0.1, turbulence: 0.35, style: "kelly" },
+  steel: { warmth: -0.3, luminosity: -0.1, turbulence: 0.4, style: "kelly" },
+  factory: { warmth: -0.2, luminosity: -0.2, turbulence: 0.5, style: "kelly" },
+  concrete: { warmth: -0.2, luminosity: -0.2, turbulence: 0.3, style: "kelly" },
+
+  // Anxiety / vulnerability / the body -- Schiele's raw, angular unease
+  anxiety: { warmth: -0.1, luminosity: -0.2, turbulence: 0.5, style: "schiele" },
+  angst: { warmth: -0.1, luminosity: -0.3, turbulence: 0.55, style: "schiele" },
+  vulnerable: { warmth: 0.1, luminosity: -0.1, turbulence: 0.3, style: "schiele" },
+  fragile: { warmth: 0, luminosity: 0, turbulence: 0.25, style: "schiele" },
+  naked: { warmth: 0.2, luminosity: 0, turbulence: 0.3, style: "schiele" },
+  longing: { warmth: 0.1, luminosity: -0.1, turbulence: 0.2, style: "schiele" },
+  isolation: { warmth: -0.2, luminosity: -0.2, turbulence: 0.2, style: "schiele" },
+  tension: { warmth: 0, luminosity: -0.1, turbulence: 0.5, style: "schiele" },
+  gaunt: { warmth: -0.1, luminosity: -0.2, turbulence: 0.3, style: "schiele" },
+  intimate: { warmth: 0.2, luminosity: 0.1, turbulence: 0.15, style: "schiele" },
 
   // Blues/jazz/improvisation -- Pollock's gestural energy
   blues: { warmth: -0.2, luminosity: -0.2, turbulence: 0.3, style: "pollock" },
