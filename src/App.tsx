@@ -19,6 +19,7 @@ export default function App() {
     status,
     error,
     playFile,
+    prepareFileUpload,
     startMic,
     stop,
     clearCanvas,
@@ -94,6 +95,7 @@ export default function App() {
               onStyleChange={setStyleId}
               sourceMode={sourceMode}
               onPlayFile={playFile}
+              onPrepareFileUpload={prepareFileUpload}
               onStartMic={startMic}
               onStop={stop}
               onClear={clearCanvas}

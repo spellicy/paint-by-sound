@@ -90,6 +90,20 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     return analyzerRef.current;
   }, []);
 
+  /** Resume the (possibly brand-new) AudioContext synchronously inside the
+   * "Upload a file" button's own click, before the native file picker ever
+   * opens. Without this, the only resume() call happens in `playFile`,
+   * inside the <input>'s change handler -- which only fires after that
+   * picker closes, an async gap some browsers no longer treat as close
+   * enough to the original click to unsuspend audio, leaving playFile's
+   * resume() a silent no-op (file "loads" but nothing plays or paints
+   * until a later, unambiguous gesture like Listen Live resumes the same
+   * underlying context). */
+  const prepareFileUpload = useCallback(() => {
+    const analyzer = ensureAnalyzer();
+    void analyzer.audioContext.resume();
+  }, [ensureAnalyzer]);
+
   const stop = useCallback(() => {
     analyzerRef.current?.stop();
     unsubRef.current?.();
@@ -179,6 +193,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     status,
     error,
     playFile,
+    prepareFileUpload,
     startMic,
     stop,
     clearCanvas,

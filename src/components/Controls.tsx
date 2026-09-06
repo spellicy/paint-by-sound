@@ -8,6 +8,7 @@ interface ControlsProps {
   onStyleChange: (id: PaintStyleId) => void;
   sourceMode: SourceMode;
   onPlayFile: (file: File) => void;
+  onPrepareFileUpload: () => void;
   onStartMic: () => void;
   onStop: () => void;
   onClear: () => void;
@@ -19,6 +20,7 @@ export function Controls({
   onStyleChange,
   sourceMode,
   onPlayFile,
+  onPrepareFileUpload,
   onStartMic,
   onStop,
   onClear,
@@ -55,7 +57,15 @@ export function Controls({
             }}
           />
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              // Resume audio here, inside this click, rather than waiting
+              // for the file <input>'s change event -- that only fires
+              // after the native file picker closes, an async gap some
+              // browsers no longer count as close enough to the original
+              // gesture to unsuspend audio.
+              onPrepareFileUpload();
+              fileInputRef.current?.click();
+            }}
             className="rounded-md bg-stone-800 px-3 py-1.5 text-sm font-medium text-stone-200 hover:bg-stone-700"
           >
             Upload a file
