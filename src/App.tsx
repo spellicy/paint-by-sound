@@ -35,11 +35,11 @@ export default function App() {
   const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
-    setPieces(loadGallery());
+    void loadGallery().then(setPieces);
   }, []);
 
-  const handleSave = () => {
-    const next = saveCurrentToGallery();
+  const handleSave = async () => {
+    const next = await saveCurrentToGallery();
     if (next) {
       setPieces(next);
       setSavedFlash(true);
@@ -48,7 +48,7 @@ export default function App() {
   };
 
   const handleRemove = (id: string) => {
-    setPieces(removeFromGallery(id));
+    void removeFromGallery(id).then(setPieces);
   };
 
   return (

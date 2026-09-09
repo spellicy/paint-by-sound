@@ -8,45 +8,78 @@ export interface GalleryPiece {
   dataUrl: string;
 }
 
-const STORAGE_KEY = "paint-by-sound.gallery.v1";
-const MAX_PIECES = 24;
+const DB_NAME = "paint-by-sound";
+const DB_VERSION = 1;
+const STORE_NAME = "gallery";
+const MAX_PIECES = 10;
 
-export function loadGallery(): GalleryPiece[] {
+// Each saved piece is a full-resolution PNG data URL (roughly 1-1.5MB) --
+// localStorage's ~5MB per-origin quota only ever held 3-4 of those before
+// setItem started silently failing, well short of the intended cap.
+// IndexedDB's quota is a large fraction of free disk space, comfortably
+// holding MAX_PIECES full-resolution images.
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(STORE_NAME)) {
+        req.result.createObjectStore(STORE_NAME, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function withStore<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, mode);
+    const request = run(tx.objectStore(STORE_NAME));
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function loadGallery(): Promise<GalleryPiece[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const all = await withStore<GalleryPiece[]>("readonly", (store) => store.getAll());
+    return all.sort((a, b) => b.createdAt - a.createdAt);
   } catch {
     return [];
   }
 }
 
-export function saveToGallery(piece: Omit<GalleryPiece, "id" | "createdAt">): GalleryPiece[] {
-  const gallery = loadGallery();
+export async function saveToGallery(
+  piece: Omit<GalleryPiece, "id" | "createdAt">,
+): Promise<GalleryPiece[]> {
   const entry: GalleryPiece = {
     ...piece,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: Date.now(),
   };
-  const next = [entry, ...gallery].slice(0, MAX_PIECES);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    await withStore("readwrite", (store) => store.put(entry));
   } catch {
-    // Storage full (data URLs are large) -- drop oldest half and retry once.
-    const trimmed = next.slice(0, Math.ceil(next.length / 2));
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-      return trimmed;
-    } catch {
-      return gallery;
-    }
+    // Storage genuinely full -- report whatever's already there.
+    return loadGallery();
   }
-  return next;
+  const gallery = await loadGallery();
+  const overflow = gallery.slice(MAX_PIECES);
+  if (overflow.length > 0) {
+    await Promise.all(overflow.map((p) => withStore("readwrite", (store) => store.delete(p.id))));
+  }
+  return gallery.slice(0, MAX_PIECES);
 }
 
-export function removeFromGallery(id: string): GalleryPiece[] {
-  const next = loadGallery().filter((p) => p.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  return next;
+export async function removeFromGallery(id: string): Promise<GalleryPiece[]> {
+  try {
+    await withStore("readwrite", (store) => store.delete(id));
+  } catch {
+    // ignore -- fall through to reporting current state
+  }
+  return loadGallery();
 }

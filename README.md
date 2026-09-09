@@ -133,8 +133,9 @@ Pollock), so it opts out of shape bias entirely and only picks up the
 subject's palette lean, the same as an untitled piece would.
 
 Finished paintings can be saved to an in-browser **exhibit catalog**
-(`localStorage`), each tagged with track name, style, and date — a small
-nod to the gallery catalog described in the original concept. Each piece can
+(`IndexedDB`, holding up to 10 full-resolution pieces), each tagged with
+track name, style, and date — a small nod to the gallery catalog described
+in the original concept. Each piece can
 be deleted (a trash icon on the thumbnail, always visible — not hover-only,
 so it works on touch devices) or saved out via the Web Share API
 (`src/gallery/saveImage.ts`), which opens the native "Save Image" sheet on
@@ -167,7 +168,7 @@ src/
   paint/palettes.ts       each painter's signature color palette
   paint/styles.ts         the per-note brush-style renderers
   paint/motifs.ts         subject primitive -> canvas anchor points
-  gallery/storage.ts      localStorage-backed exhibit catalog
+  gallery/storage.ts      IndexedDB-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
   components/             Controls, StatusBar, ConceptPanel, InspirationPanel, Gallery

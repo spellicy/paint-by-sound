@@ -168,7 +168,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     setStyleIdState(id);
   }, []);
 
-  const saveCurrentToGallery = useCallback((): GalleryPiece[] | null => {
+  const saveCurrentToGallery = useCallback(async (): Promise<GalleryPiece[] | null> => {
     if (!engineRef.current) return null;
     const dataUrl = engineRef.current.toDataURL();
     return saveToGallery({
