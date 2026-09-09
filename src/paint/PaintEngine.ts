@@ -219,6 +219,14 @@ export class PaintEngine {
       this.nextFocalShiftAt = elapsed + 4 + this.rand() * 3;
     }
 
+    // de Kooning attacks a focal area unpredictably rather than tracing the
+    // melody smoothly and holding one column steady -- without this, a
+    // rising or falling melodic line combined with a nearly-fixed x reads
+    // as a straight (near-vertical or diagonal) line of marks, not the
+    // scattered violence of the Woman paintings. Kelly's deliberate,
+    // considered panel placement keeps the calmer original behavior.
+    const isGestural = this.styleId === "dekooning";
+
     if (frequency > 0) {
       const midi = 69 + 12 * Math.log2(frequency / 440);
       const norm = clamp((midi - 40) / 60, 0, 1);
@@ -227,13 +235,22 @@ export class PaintEngine {
       // a narrow vocal/lead range still ends up using the full canvas
       // height as the focal point relocates, rather than pinning to one band.
       const targetY = pitchY * 0.45 + this.focal.y * 0.55;
-      this.cursor.y += (targetY - this.cursor.y) * 0.22;
+      this.cursor.y += (targetY - this.cursor.y) * (isGestural ? 0.14 : 0.22);
     } else {
       this.cursor.y += (this.focal.y - this.cursor.y) * 0.08 + (this.rand() - 0.5) * 10;
     }
 
     const spread = (0.07 + energyFast * 0.3) * (0.7 + this.theme.turbulence * 0.6);
     this.cursor.x += (this.focal.x - this.cursor.x) * 0.07 + (this.rand() - 0.5) * width * spread;
+
+    if (isGestural) {
+      // A guaranteed baseline scatter on both axes, on top of the above --
+      // not just scaling the existing jitter (which can shrink to near
+      // nothing in a quiet passage), so placement stays unpredictable
+      // regardless of the music's energy.
+      this.cursor.x += (this.rand() - 0.5) * width * 0.22;
+      this.cursor.y += (this.rand() - 0.5) * height * 0.16;
+    }
 
     const biased = this.biasTowardMotif(this.cursor.x, this.cursor.y, this.theme.motifStrength * 0.08);
     this.cursor.x = clamp(biased.x, width * 0.03, width * 0.97);

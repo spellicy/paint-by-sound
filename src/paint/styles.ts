@@ -111,7 +111,10 @@ const dekooning: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
 
   const passes = rand() < 0.4 ? 3 : 2;
   for (let i = 0; i < passes; i++) {
-    const angle = (rand() - 0.5) * Math.PI * 1.1 - Math.PI / 4;
+    // Full 360 degrees, not a range centered on one diagonal -- real
+    // slashes attack from every direction, and a shared bias across every
+    // mark is part of what read as too orderly/directional.
+    const angle = rand() * TAU;
     const passLen = len * (0.55 + rand() * 0.6);
     const passWidth = width * (0.5 + rand() * 0.7);
     ctx.save();
