@@ -15,7 +15,11 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // gathered instead of running, and occasionally a wide, chaotic spray
   // burst well past the line itself. Real flung paint is never one
   // uniform-width line; it varies constantly along its own length.
-  const reach = 12 + note.amplitude * 70;
+  // Length varies well beyond what amplitude alone would give -- a short
+  // stub or a long trailing thread, not a fairly narrow band around one
+  // typical size every time.
+  const reachJitter = rand() < 0.15 ? 0.3 + rand() * 0.4 : 0.7 + rand() * 1.7;
+  const reach = (12 + note.amplitude * 70) * reachJitter;
   const segments = 2 + Math.floor(rand() * 3);
   const baseWidth = 0.5 + note.amplitude * 1.8;
 

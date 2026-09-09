@@ -268,7 +268,17 @@ export class PaintEngine {
     const { width, height } = this.canvas;
     const turbulence = this.theme.turbulence;
 
-    this.roamHeading += (this.rand() - 0.5) * (0.4 + turbulence * 1.1) * turnScale;
+    // Pollock's arm threw paint in discrete gestural flings, each in its
+    // own direction, not one path smoothly bending as it goes -- gradual
+    // heading drift alone traces out long, straight-ish bounces off the
+    // canvas edges once many short strokes are laid end to end along it.
+    // An occasional sharp, large turn -- on top of the gradual drift, not
+    // instead of it -- is what breaks that up into real Pollock chaos.
+    if (this.rand() < 0.16) {
+      this.roamHeading += (this.rand() - 0.5) * Math.PI * 1.7;
+    } else {
+      this.roamHeading += (this.rand() - 0.5) * (0.4 + turbulence * 1.1) * turnScale;
+    }
     if (frequency > 0) {
       const midi = 69 + 12 * Math.log2(frequency / 440);
       const norm = clamp((midi - 40) / 60, 0, 1);
@@ -291,7 +301,12 @@ export class PaintEngine {
       this.roamHeading += diff * this.theme.motifStrength * 0.22;
     }
 
-    const step = (16 + amplitude * 100) * stepScale;
+    // Step length varies far more than amplitude alone would give -- a
+    // short shuffle or a long fling, rand()*rand() skewing toward the
+    // shorter end with an occasional much longer reach, rather than a
+    // fairly narrow band around one typical size every time.
+    const stepVariance = 0.35 + this.rand() * this.rand() * 2.4;
+    const step = (14 + amplitude * 90) * stepScale * stepVariance;
     let nx = this.cursor.x + Math.cos(this.roamHeading) * step;
     let ny = this.cursor.y + Math.sin(this.roamHeading) * step;
 
