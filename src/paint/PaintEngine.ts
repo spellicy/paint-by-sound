@@ -439,10 +439,16 @@ export class PaintEngine {
   private ensureRothkoBands() {
     if (this.rothkoBands.length) return;
     const { height } = this.canvas;
+    // Adjacent bands overlap by a few percent of height, rather than
+    // leaving a hard-edged gap between them -- each band's own paint
+    // already tapers to near-nothing at its true top/bottom (see
+    // renderRothkoField), so where two bands' soft edges share this
+    // overlap zone their colors layer into a genuine gradient blend
+    // instead of meeting at a visible seam.
     const bounds: Array<[number, number]> = [
-      [0.04, 0.32],
-      [0.36, 0.64],
-      [0.68, 0.96],
+      [0.04, 0.37],
+      [0.31, 0.69],
+      [0.63, 0.96],
     ];
     this.rothkoBands = bounds.map(([a, b]) => ({
       yStart: height * a,
@@ -523,24 +529,58 @@ export class PaintEngine {
    * (only lightly jittered) rather than a fresh hue per note. */
   private renderRothkoField(note: NoteEvent, band: RothkoBand, rawColor: NoteColor) {
     if (band.hue === null) {
-      band.hue = rawColor.hue;
-    } else if (this.rand() < 0.02) {
+      band.hue = this.pickDistinctBandHue(band, rawColor.hue);
+    } else if (this.rand() < 0.035) {
       // Rarely, the field shifts to a new dominant color -- a mood change.
-      band.hue = rawColor.hue;
+      band.hue = this.pickDistinctBandHue(band, rawColor.hue);
     }
-    const hue = (band.hue + (this.rand() - 0.5) * 8 + 360) % 360;
-    const sat = rawColor.saturation;
+    const hue = (band.hue + (this.rand() - 0.5) * 10 + 360) % 360;
+    const sat = clamp(rawColor.saturation + (this.rand() - 0.5) * 10, 0, 100);
     const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 10, 90);
 
     const bandHeight = band.yEnd - band.yStart;
     const w = this.canvas.width * (0.28 + this.rand() * 0.4 + note.amplitude * 0.15);
     const h = bandHeight * (0.35 + this.rand() * 0.35 + note.amplitude * 0.15);
+    const alpha = 0.05 + note.amplitude * 0.05;
+
+    // Real Rothko fields don't hold flat color right up to a hard edge --
+    // they glow softest near their own top and bottom and dissolve into
+    // whatever's next door as a genuine gradient, not a hard cutoff or a
+    // visible seam. A wide vertical alpha taper across the band's own true
+    // bounds gives every fill that soft edge; since neighboring bands'
+    // ranges deliberately overlap a little (see ensureRothkoBands), each
+    // side's faint tail paints into that shared zone and the two colors
+    // physically layer into a blend there, rather than meeting at a line.
+    const core = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha.toFixed(3)})`;
+    const edge = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, 0)`;
+    const grad = this.ctx.createLinearGradient(0, band.yStart, 0, band.yEnd);
+    grad.addColorStop(0, edge);
+    grad.addColorStop(0.35, core);
+    grad.addColorStop(0.65, core);
+    grad.addColorStop(1, edge);
 
     this.ctx.save();
     this.ctx.filter = "blur(20px)";
-    this.ctx.fillStyle = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${(0.05 + note.amplitude * 0.05).toFixed(3)})`;
+    this.ctx.fillStyle = grad;
     this.ctx.fillRect(this.cursor.x - w / 2, this.cursor.y - h / 2, w, h);
     this.ctx.restore();
+  }
+
+  /** Nudge a freshly-picked band hue away from whatever the other Rothko
+   * bands already show, so a piece doesn't end up with two or three fields
+   * reading as nearly the same color just because the audio's pitch content
+   * happened to cluster together -- real multi-band Rothkos read as
+   * distinct colors stacked, not shades of the same one. */
+  private pickDistinctBandHue(band: RothkoBand, candidate: number): number {
+    let hue = candidate;
+    for (const other of this.rothkoBands) {
+      if (other === band || other.hue === null) continue;
+      const dist = Math.abs(hueDistanceSigned(hue, other.hue));
+      if (dist < 45) {
+        hue = (other.hue + 130 + this.rand() * 40) % 360;
+      }
+    }
+    return hue;
   }
 
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
@@ -722,4 +762,8 @@ export class PaintEngine {
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
+}
+
+function hueDistanceSigned(from: number, to: number): number {
+  return ((to - from + 540) % 360) - 180;
 }
