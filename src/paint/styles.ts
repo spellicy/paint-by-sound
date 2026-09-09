@@ -9,21 +9,19 @@ const TAU = Math.PI * 2;
 const rothko: StyleRenderer = () => {};
 
 const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // A single dripped/flung filament -- a thin, looping, multi-segment
-  // thread laid down in one continuous gesture, tapering as it goes, the
-  // way paint trailed off a loaded stick or brush through the air. A
-  // single smooth arc reads as a deliberate brushstroke; the looping
-  // elbows here are what make it read as *flung* rather than painted.
+  // A dripped/flung filament with genuinely variable width -- thick where
+  // the loaded stick dumped extra paint, thin where it ran dry, rather
+  // than one smooth taper -- plus, sometimes, a pooled blob where paint
+  // gathered instead of running, and occasionally a wide, chaotic spray
+  // burst well past the line itself. Real flung paint is never one
+  // uniform-width line; it varies constantly along its own length.
   const reach = 12 + note.amplitude * 70;
-  const segments = 2 + Math.floor(rand() * 2);
-  const flickCount = note.isOnset ? 3 + Math.floor(note.amplitude * 6) : 1;
+  const segments = 2 + Math.floor(rand() * 3);
+  const baseWidth = 0.5 + note.amplitude * 1.8;
 
   ctx.save();
-  ctx.strokeStyle = color.rgba(0.6 + rand() * 0.2);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.beginPath();
-  ctx.moveTo(cursor.x, cursor.y);
   let px = cursor.x;
   let py = cursor.y;
   let heading = rand() * TAU;
@@ -34,22 +32,62 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
     const ny = py + Math.sin(heading) * segLen;
     const cx = px + Math.cos(heading - 0.6) * segLen * 0.5;
     const cy = py + Math.sin(heading - 0.6) * segLen * 0.5;
-    // Tapers toward the tail, the way a dripped line thins as it runs out.
-    ctx.lineWidth = Math.max(0.4, (0.5 + note.amplitude * 1.6) * (1 - i / (segments + 1)));
+    // Each segment gets its own stroke (and so its own width/alpha) --
+    // a single path stroked once only ever renders with whatever width
+    // was set right before that one stroke() call, not per segment, so
+    // separate strokes are what actually makes the line vary along its
+    // length rather than coming out one uniform thickness.
+    const widthJitter = rand() < 0.2 ? 0.25 + rand() * 0.3 : 0.6 + rand() * 1.3;
+    ctx.lineWidth = Math.max(0.35, baseWidth * widthJitter);
+    ctx.strokeStyle = color.rgba(0.5 + rand() * 0.35);
+    ctx.beginPath();
+    ctx.moveTo(px, py);
     ctx.quadraticCurveTo(cx, cy, nx, ny);
+    ctx.stroke();
     px = nx;
     py = ny;
   }
-  ctx.stroke();
 
-  // Fine spatter flecks where the loaded stick broke contact -- small and
-  // sparse, never a filled blob.
+  // Occasionally the stick dumped extra paint mid-gesture -- a small
+  // pooled blob (an irregular, lobed splotch, not a perfect circle)
+  // rather than a continuous line.
+  if (rand() < 0.22) {
+    const bx = cursor.x + (px - cursor.x) * rand();
+    const by = cursor.y + (py - cursor.y) * rand();
+    const br = 1.5 + rand() * (2 + note.amplitude * 5);
+    const lobes = 5 + Math.floor(rand() * 3);
+    ctx.fillStyle = color.rgba(0.45 + rand() * 0.3);
+    ctx.beginPath();
+    for (let i = 0; i < lobes; i++) {
+      const a = (i / lobes) * TAU;
+      const r = br * (0.6 + rand() * 0.7);
+      const x = bx + Math.cos(a) * r;
+      const y = by + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Fine spatter flecks where the loaded stick broke contact -- usually
+  // small and sparse, but sometimes (a real fling) a much wider, more
+  // chaotic scatter flung well past the line itself.
+  const isBigSpray = rand() < 0.15;
+  const flickCount = note.isOnset
+    ? (isBigSpray ? 8 : 3) + Math.floor(note.amplitude * (isBigSpray ? 14 : 6))
+    : isBigSpray
+      ? 4 + Math.floor(rand() * 5)
+      : 1;
+  const spreadRadius = isBigSpray ? 14 + note.amplitude * 30 : 10;
   ctx.fillStyle = color.rgba(0.5);
   for (let i = 0; i < flickCount; i++) {
     const t = rand();
-    const fx = cursor.x + (px - cursor.x) * t + (rand() - 0.5) * 10;
-    const fy = cursor.y + (py - cursor.y) * t + (rand() - 0.5) * 10;
-    const r = 0.4 + rand() * (0.5 + note.amplitude * 1.2);
+    const fx = cursor.x + (px - cursor.x) * t + (rand() - 0.5) * spreadRadius;
+    const fy = cursor.y + (py - cursor.y) * t + (rand() - 0.5) * spreadRadius;
+    // rand()*rand() skews toward small drops with an occasional larger
+    // splat, the way real spatter distributes -- mostly fine, rarely fat.
+    const r = 0.4 + rand() * rand() * (isBigSpray ? 3.5 : 1.2) * (0.5 + note.amplitude);
     ctx.beginPath();
     ctx.arc(fx, fy, r, 0, TAU);
     ctx.fill();
