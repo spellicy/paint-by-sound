@@ -39,7 +39,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
   },
   {
     id: "louis",
-    label: "Morris Louis",
+    label: "Louis",
     blurb: "Vibrant poured color, in parallel vertical stripes.",
   },
   {
@@ -50,7 +50,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
   {
     id: "marden",
     label: "Marden",
-    blurb: "Sinuous monochrome line, color-field minimalism.",
+    blurb: "Sinuous line, color-field minimalism with loosely wandering hue.",
   },
 ];
 

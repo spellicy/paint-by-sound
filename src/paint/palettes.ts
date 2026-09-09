@@ -16,8 +16,9 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
  * `signatureHues` are the anchor colors of that painter's world; `huePull`
  * (0..1) is how strongly a note's raw pitch-hue gets pulled toward the
  * nearest anchor -- high for painters who worked in a tight palette
- * (Rothko, Marden), lower for painters whose color ranged more widely
- * (Pollock's material-driven earth tones, de Kooning's heated mix).
+ * (Rothko), lower for painters whose color ranges freely with the note's
+ * own pitch and mood (Pollock, Marden) or across a wide fixed spread
+ * (Martin's twelve-hue wheel).
  */
 interface PalettePreset {
   signatureHues: number[];
@@ -36,13 +37,16 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [18, 42],
   },
   pollock: {
-    // Enamel black, bone white, and earthy umber/sienna with a rare
-    // cadmium-red accent -- the poured-paint palette of the drip
-    // paintings, tightly held rather than ranging across the wheel.
-    signatureHues: [32, 8, 0],
-    huePull: 0.55,
-    saturation: [6, 30],
-    lightness: [10, 46],
+    // A wide-open range rather than the historical enamel-and-earth
+    // palette -- hue tracks the note's own pitch almost freely (low
+    // huePull, anchors spread clear around the wheel) and saturation/
+    // lightness stretch from near-black shadow to fully vivid, so louder
+    // and brighter notes read as a dramatic swing rather than a variation
+    // on the same muted umber.
+    signatureHues: [0, 45, 90, 150, 200, 260, 300],
+    huePull: 0.18,
+    saturation: [12, 96],
+    lightness: [6, 88],
   },
   dekooning: {
     // Flesh pink, cadmium red and yellow -- tightly clustered warm
@@ -76,20 +80,24 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [40, 58],
   },
   martin: {
-    // Pale tan, pale blue, pale pink -- barely-there washes behind a fine
-    // graphite grid.
-    signatureHues: [45, 200, 340],
+    // Barely-there pale washes behind a fine graphite grid, but drawn from
+    // a full twelve-anchor wheel (one per pitch class) rather than just
+    // three -- her lines stay quiet and pale, but which quiet pale hue a
+    // given row lands on ranges much further than tan/blue/pink alone.
+    signatureHues: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
     huePull: 0.5,
     saturation: [5, 20],
     lightness: [75, 92],
   },
   marden: {
-    // Muted ochre, sage, and slate -- restrained, near-monochrome per
-    // piece, the color-field lineage carried into minimalism.
-    signatureHues: [30, 150, 200],
-    huePull: 0.85,
-    saturation: [20, 45],
-    lightness: [30, 60],
+    // A gentle hue pull rather than the near-monochrome lock of before --
+    // low huePull lets each stroke wander much further from the three
+    // anchors, so the color drifts loosely across a piece instead of
+    // settling on essentially one fixed hue.
+    signatureHues: [30, 90, 150, 200, 260, 320],
+    huePull: 0.28,
+    saturation: [18, 62],
+    lightness: [22, 68],
   },
 };
 

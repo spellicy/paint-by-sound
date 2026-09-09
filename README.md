@@ -62,12 +62,12 @@ painting, and the painters who carried that lineage into minimalism:
 | Style | Composition | Palette |
 |---|---|---|
 | Rothko | The canvas divided into a few large horizontal **color fields**; pitch register selects which field a note reinforces, building soft-edged, full-bleed bands | Deep maroon, burnt orange, plum, mustard — luminous through layering, not raw brightness |
-| Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Earthy umber and sienna, mostly desaturated, with a rare cadmium-red accent |
+| Pollock | **All-over** — a continuous gestural sweep that roams and bounces across the *entire* canvas, no fixed subject | Wide-ranging, from near-black shadow to fully vivid, tracking pitch and key almost freely rather than one fixed earth-tone family |
 | de Kooning | Two or three slashing strokes piled up in different directions per mark, overlaid with an independent looping black contour line and a palette-knife scrape, across focal areas | Hot flesh pink, cadmium red and yellow, clashing with whatever cool leftover a pitch's hue doesn't share with that warm cluster |
 | Schiele | **Sparse** — a handful of isolated, angular contour marks across a mostly bare canvas, arm jumps between well-separated positions; each mark is a nervous multi-segment line with sharp elbows, never a smooth curve | Muted burnt red-orange, ochre and sickly olive, applied as a wash that hugs the contour and thins moving inward rather than filling evenly |
-| Morris Louis | **Stripe** — several narrow vertical color bands, each fed by its own pitch register and building up over the piece; bare canvas shows between them | Full spectrum of pure, vivid poured hues — red, orange, yellow, viridian, ultramarine, violet — never muted or earthy |
-| Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale tan, pale blue, pale pink washes |
-| Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Muted, near-monochrome ochre, sage and slate per piece |
+| Louis | **Stripe** — several narrow vertical color bands, each fed by its own pitch register and building up over the piece; bare canvas shows between them | Full spectrum of pure, vivid poured hues — red, orange, yellow, viridian, ultramarine, violet — never muted or earthy |
+| Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale washes drawn from a full twelve-hue wheel, one per pitch class, rather than just a few |
+| Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
 
 ### Major and minor
 
