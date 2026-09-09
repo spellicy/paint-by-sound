@@ -8,10 +8,10 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 /**
  * Each painter worked with a limited, characteristic palette -- Rothko's
  * handful of deep, luminous field colors; Schiele's muted earth and flesh
- * tones; Kelly's pure saturated flats. This is the opposite of one full-
- * saturation rainbow hue wheel applied uniformly to every style, which is
- * what made every painting look the same neon regardless of who was
- * "painting."
+ * tones; Louis's full spectrum of pure, vivid stain colors. This is the
+ * opposite of one full-saturation rainbow hue wheel applied uniformly to
+ * every style, which is what made every painting look the same neon
+ * regardless of who was "painting."
  *
  * `signatureHues` are the anchor colors of that painter's world; `huePull`
  * (0..1) is how strongly a note's raw pitch-hue gets pulled toward the
@@ -65,13 +65,15 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [20, 50],
     lightness: [26, 64],
   },
-  kelly: {
-    // Pure saturated primaries and secondaries -- red, orange, yellow,
-    // green, blue -- flat and confident, no muddying.
-    signatureHues: [5, 30, 50, 140, 220],
-    huePull: 0.65,
-    saturation: [65, 95],
-    lightness: [40, 65],
+  louis: {
+    // The stain paintings drew on the full spectrum of pure, transparent
+    // acrylic hues -- cadmium red, orange, cadmium yellow, viridian,
+    // ultramarine, violet -- run vivid and side by side, never muted or
+    // earthy the way Pollock's or Schiele's palettes are.
+    signatureHues: [5, 30, 55, 140, 210, 265, 320],
+    huePull: 0.6,
+    saturation: [58, 85],
+    lightness: [40, 58],
   },
   martin: {
     // Pale tan, pale blue, pale pink -- barely-there washes behind a fine

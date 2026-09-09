@@ -8,6 +8,11 @@ const TAU = Math.PI * 2;
 // invoked in normal operation.
 const rothko: StyleRenderer = () => {};
 
+// Louis (parallel vertical color stripes) is likewise rendered directly by
+// PaintEngine.renderLouisStripe, which needs a persistent stripe -> hue
+// mapping that doesn't fit the single-point StrokeContext shape either.
+const louis: StyleRenderer = () => {};
+
 const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // A dripped/flung filament with genuinely variable width -- thick where
   // the loaded stick dumped extra paint, thin where it ran dry, rather
@@ -271,32 +276,6 @@ const schiele: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
-const kelly: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // A single flat, hard-edged shape in one pure color -- no blur, no
-  // gradient, no overlapping texture -- the crisp confident forms of
-  // Kelly's color-panel language.
-  const size = 16 + note.amplitude * 70;
-  const shape = Math.floor(rand() * 3);
-  ctx.save();
-  ctx.translate(cursor.x, cursor.y);
-  ctx.rotate(Math.floor(rand() * 4) * (Math.PI / 2));
-  ctx.fillStyle = color.rgba(0.95);
-  ctx.beginPath();
-  if (shape === 0) {
-    ctx.rect(-size / 2, -size / 2, size, size * (0.5 + rand() * 0.6));
-  } else if (shape === 1) {
-    ctx.arc(0, 0, size / 2, 0, TAU);
-  } else {
-    // A curved panel edge -- a lens shape rather than a full circle,
-    // echoing his shaped canvases.
-    ctx.moveTo(-size / 2, size / 2);
-    ctx.quadraticCurveTo(0, -size * 0.9, size / 2, size / 2);
-    ctx.closePath();
-  }
-  ctx.fill();
-  ctx.restore();
-};
-
 const martin: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // A single fine, restrained horizontal line -- pale, hand-ruled, barely
   // varying -- the quiet grids built from thousands of nearly identical
@@ -352,7 +331,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   pollock,
   dekooning,
   schiele,
-  kelly,
+  louis,
   martin,
   marden,
 };

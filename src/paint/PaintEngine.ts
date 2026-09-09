@@ -12,6 +12,7 @@ import {
   FOCAL_STYLES,
   GRID_STYLES,
   SPARSE_STYLES,
+  STRIPE_STYLES,
   type ArmCursor,
   type PaintStyleId,
 } from "./types";
@@ -48,13 +49,15 @@ function mulberry32(seed: number) {
   };
 }
 
-// The focal-family styles are interchangeable for a rhythmic accent stroke
-// -- both are gestural enough that a stray stroke in the other's technique
-// still reads as emphasis rather than a jarring style break. Pollock is
-// deliberately excluded: his all-over action-painting technique never
-// varied within a canvas, so a rhythmic passage should still look like
-// Pollock, just bolder (handled below), never like a hard-edged Kelly
-// block or a de Kooning slash breaking into the middle of a drip painting.
+// Focal-family styles are interchangeable for a rhythmic accent stroke --
+// each is gestural enough that a stray stroke in another's technique still
+// reads as emphasis rather than a jarring style break (currently just de
+// Kooning, so this is a no-op until a second focal-family painter exists --
+// see the `others.length` guard where this is used). Pollock is deliberately
+// excluded: his all-over action-painting technique never varied within a
+// canvas, so a rhythmic passage should still look like Pollock, just bolder
+// (handled below), never like a de Kooning slash breaking into the middle
+// of a drip painting.
 const ACCENT_STYLES: PaintStyleId[] = FOCAL_STYLES;
 
 const NEUTRAL_THEME: ThemeInfluence = {
@@ -79,6 +82,12 @@ interface RothkoBand {
   hue: number | null;
 }
 
+interface LouisStripe {
+  xStart: number;
+  xEnd: number;
+  hue: number | null;
+}
+
 export interface PaintEngineOptions {
   canvas: HTMLCanvasElement;
   styleId: PaintStyleId;
@@ -97,6 +106,7 @@ export class PaintEngine {
   private gridRow = 0;
   private gridX: number;
   private rothkoBands: RothkoBand[] = [];
+  private louisStripes: LouisStripe[] = [];
   private rand: () => number;
   private phraseTracker = new PhraseTracker();
   private lastWashAt = -Infinity;
@@ -126,6 +136,7 @@ export class PaintEngine {
   setStyle(styleId: PaintStyleId) {
     this.styleId = styleId;
     this.rothkoBands = [];
+    this.louisStripes = [];
     // Pollock's all-over technique explicitly has no fixed subject area
     // (see ALL_OVER_STYLES) -- drop any subject bias picked up under a
     // previous style so switching to Pollock mid-piece stays true to that.
@@ -159,6 +170,7 @@ export class PaintEngine {
     this.gridRow = 0;
     this.gridX = this.canvas.width * 0.02;
     this.rothkoBands = [];
+    this.louisStripes = [];
     this.phraseTracker.reset();
     this.lastWashAt = -Infinity;
     this.lastMelodic = null;
@@ -197,10 +209,10 @@ export class PaintEngine {
   // Composition: each painter family moves the simulated "arm" differently.
   // ---------------------------------------------------------------------
 
-  /** de Kooning / Kelly: develop a handful of focal "subject" areas across
-   * a wide grid, rather than scanning uniformly -- so a full track ends up
-   * visiting most of the canvas while still building up compositions
-   * around areas of interest. */
+  /** The focal family (currently just de Kooning): develop a handful of
+   * focal "subject" areas across a wide grid, rather than scanning
+   * uniformly -- so a full track ends up visiting most of the canvas while
+   * still building up compositions around areas of interest. */
   private retargetFocal() {
     const { width, height } = this.canvas;
     const xFifths = [0.12, 0.3, 0.5, 0.7, 0.88];
@@ -223,8 +235,10 @@ export class PaintEngine {
     // melody smoothly and holding one column steady -- without this, a
     // rising or falling melodic line combined with a nearly-fixed x reads
     // as a straight (near-vertical or diagonal) line of marks, not the
-    // scattered violence of the Woman paintings. Kelly's deliberate,
-    // considered panel placement keeps the calmer original behavior.
+    // scattered violence of the Woman paintings. (This is currently
+    // equivalent to FOCAL_STYLES.includes(this.styleId) since de Kooning is
+    // the only focal-family style, but kept as an explicit flag in case a
+    // calmer, more deliberate focal painter is added later.)
     const isGestural = this.styleId === "dekooning";
 
     if (frequency > 0) {
@@ -503,7 +517,7 @@ export class PaintEngine {
   /** Sustained, tonal passages are drawn as one continuous flowing line
    * tracing the melodic contour, rather than a stamp per note -- painting
    * reacting to the melody instead of to each isolated note. Used by the
-   * phase-aware focal family (de Kooning, Kelly) and Pollock. */
+   * phase-aware focal family (de Kooning) and Pollock. */
   private renderMelodicSegment(note: NoteEvent, color: NoteColor) {
     const width = 1 + note.amplitude * 5;
     if (this.lastMelodic && note.time - this.lastMelodic.time < 0.7) {
@@ -583,6 +597,96 @@ export class PaintEngine {
     return hue;
   }
 
+  /** Louis: canvas divided into several narrow, closely-spaced vertical
+   * stripes, each its own persistent poured color; pitch register selects
+   * which stripe a note feeds, and the cursor lands anywhere along that
+   * stripe's full height. The real "Stripe" paintings run many thin bands
+   * of flat, confident color close together with only a thin sliver of bare
+   * canvas between them -- narrower than the stripes themselves, not the
+   * wide gaps Rothko's fields get. */
+  private ensureLouisStripes() {
+    if (this.louisStripes.length) return;
+    const { width } = this.canvas;
+    const count = 9;
+    const margin = 0.08;
+    const gap = 0.012;
+    const usable = 1 - margin * 2 - gap * (count - 1);
+    const span = usable / count;
+    const bounds: Array<[number, number]> = [];
+    for (let i = 0; i < count; i++) {
+      const a = margin + i * (span + gap);
+      bounds.push([a, a + span]);
+    }
+    this.louisStripes = bounds.map(([a, b]) => ({
+      xStart: width * a,
+      xEnd: width * b,
+      hue: null,
+    }));
+  }
+
+  private updateLouisCursor(frequency: number): LouisStripe {
+    this.ensureLouisStripes();
+    const { height } = this.canvas;
+    const count = this.louisStripes.length;
+    let index = Math.floor(count / 2);
+    if (frequency > 0) {
+      const midi = 69 + 12 * Math.log2(frequency / 440);
+      const norm = clamp((midi - 40) / 60, 0, 1);
+      index = clamp(Math.floor(norm * count), 0, count - 1);
+    }
+    const stripe = this.louisStripes[index];
+    this.cursor.x = stripe.xStart + this.rand() * (stripe.xEnd - stripe.xStart);
+    this.cursor.y = height * (0.04 + this.rand() * 0.92);
+    return stripe;
+  }
+
+  /** Louis's poured stripes read as flat, confident, nearly-opaque color
+   * with a crisp (not hazy) edge -- the controlled "Stripe" paintings, not
+   * the softer bled "Veils". Width stays close to the stripe's own bounds
+   * so it doesn't bridge the thin gap into a neighbor. */
+  private renderLouisStripe(note: NoteEvent, stripe: LouisStripe, rawColor: NoteColor) {
+    if (stripe.hue === null) {
+      stripe.hue = this.pickDistinctStripeHue(stripe, rawColor.hue);
+    } else if (this.rand() < 0.03) {
+      // Rarely, the stripe shifts to a new dominant color -- a mood change.
+      stripe.hue = this.pickDistinctStripeHue(stripe, rawColor.hue);
+    }
+    const hue = (stripe.hue + (this.rand() - 0.5) * 6 + 360) % 360;
+    const sat = clamp(rawColor.saturation + 5, 55, 88);
+    const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 32, 54);
+
+    const stripeWidth = stripe.xEnd - stripe.xStart;
+    const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.05;
+    const w = stripeWidth * (0.85 + this.rand() * 0.14);
+    const h = this.canvas.height * (0.12 + this.rand() * 0.14 + note.amplitude * 0.05);
+    const alpha = 0.45 + note.amplitude * 0.35;
+
+    this.ctx.save();
+    this.ctx.filter = "blur(1.5px)";
+    this.ctx.fillStyle = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha.toFixed(3)})`;
+    this.ctx.fillRect(cx - w / 2, this.cursor.y - h / 2, w, h);
+    this.ctx.restore();
+  }
+
+  /** Nudge a freshly-picked stripe hue away from whatever the other Louis
+   * stripes already show, so the piece reads as several distinct colors run
+   * side by side rather than the same hue repeating down the canvas. With
+   * up to nine stripes sharing a handful of palette anchors, a single
+   * one-shot nudge can still land back near a third, unrelated stripe --
+   * so this retries against the *whole* set each time until a genuinely
+   * open hue turns up (or attempts run out). */
+  private pickDistinctStripeHue(stripe: LouisStripe, candidate: number): number {
+    let hue = candidate;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const collides = this.louisStripes.some(
+        (other) => other !== stripe && other.hue !== null && Math.abs(hueDistanceSigned(hue, other.hue)) < 30,
+      );
+      if (!collides) break;
+      hue = (hue + 40 + this.rand() * 280) % 360;
+    }
+    return hue;
+  }
+
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
    * waves) gets blocked in once, early in the piece, in the current
    * painter's own hand -- the same points handed to Rothko become a color-
@@ -616,6 +720,8 @@ export class PaintEngine {
 
     const isField = FIELD_STYLES.includes(this.styleId);
     if (isField) this.ensureRothkoBands();
+    const isStripe = STRIPE_STYLES.includes(this.styleId);
+    if (isStripe) this.ensureLouisStripes();
     const isFlow = FLOW_STYLES.includes(this.styleId);
 
     for (const mark of marks) {
@@ -635,6 +741,11 @@ export class PaintEngine {
           this.rothkoBands.find((b) => mark.y >= b.yStart && mark.y <= b.yEnd) ??
           this.rothkoBands[1];
         this.renderRothkoField(note, band, color);
+      } else if (isStripe) {
+        const stripe =
+          this.louisStripes.find((s) => mark.x >= s.xStart && mark.x <= s.xEnd) ??
+          this.louisStripes[Math.floor(this.louisStripes.length / 2)];
+        this.renderLouisStripe(note, stripe, color);
       } else {
         renderStroke(this.styleId, {
           ctx: this.ctx,
@@ -654,6 +765,7 @@ export class PaintEngine {
     const phrase = this.phraseTracker.update(note);
     const isAllOver = ALL_OVER_STYLES.includes(this.styleId);
     const isField = FIELD_STYLES.includes(this.styleId);
+    const isStripe = STRIPE_STYLES.includes(this.styleId);
     const isGrid = GRID_STYLES.includes(this.styleId);
     const isFlow = FLOW_STYLES.includes(this.styleId);
     const isSparse = SPARSE_STYLES.includes(this.styleId);
@@ -662,11 +774,14 @@ export class PaintEngine {
     const sparseSkip = isSparse && !(note.isOnset || this.rand() < 0.15);
 
     let rothkoBand: RothkoBand | null = null;
+    let louisStripe: LouisStripe | null = null;
     if (!sparseSkip) {
       if (isAllOver) {
         this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
       } else if (isField) {
         rothkoBand = this.updateRothkoCursor(note.frequency);
+      } else if (isStripe) {
+        louisStripe = this.updateLouisCursor(note.frequency);
       } else if (isGrid) {
         this.updateGridCursor(note.amplitude);
       } else if (isFlow) {
@@ -704,6 +819,8 @@ export class PaintEngine {
     if (!sparseSkip) {
       if (isField && rothkoBand) {
         this.renderRothkoField(note, rothkoBand, color);
+      } else if (isStripe && louisStripe) {
+        this.renderLouisStripe(note, louisStripe, color);
       } else if (isGrid || isFlow || isSparse) {
         // These families always paint in their own technique, regardless of
         // musical phase -- that's how those painters actually worked.
@@ -729,10 +846,14 @@ export class PaintEngine {
           note.isOnset &&
           this.rand() < 0.22
         ) {
-          // An occasional accent in the other focal style's brush technique,
+          // An occasional accent in another focal style's brush technique,
           // for emphasis. Pollock never participates -- see ACCENT_STYLES.
+          // (No-op while FOCAL_STYLES has only one member -- kept general in
+          // case a second focal-family painter is added later.)
           const others = ACCENT_STYLES.filter((s) => s !== this.styleId);
-          renderStyle = others[Math.floor(this.rand() * others.length)];
+          if (others.length > 0) {
+            renderStyle = others[Math.floor(this.rand() * others.length)];
+          }
         }
 
         const boosted =

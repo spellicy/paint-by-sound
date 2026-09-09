@@ -59,20 +59,20 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   midnight: { warmth: -0.3, luminosity: -0.6, turbulence: 0.15, style: "rothko" },
   shadow: { warmth: -0.2, luminosity: -0.6, turbulence: 0.2, style: "rothko" },
 
-  // Joy / warmth / celebration -- Kelly's bold, cheerful flat color
-  joy: { warmth: 0.8, luminosity: 0.6, turbulence: 0.3, style: "kelly" },
-  happy: { warmth: 0.7, luminosity: 0.6, turbulence: 0.3, style: "kelly" },
-  love: { warmth: 0.7, luminosity: 0.4, turbulence: 0.2, style: "kelly" },
-  dance: { warmth: 0.5, luminosity: 0.4, turbulence: 0.5, style: "kelly" },
-  party: { warmth: 0.6, luminosity: 0.5, turbulence: 0.5, style: "kelly" },
-  summer: { warmth: 0.8, luminosity: 0.6, turbulence: 0.3, style: "kelly" },
-  sunshine: { warmth: 0.9, luminosity: 0.8, turbulence: 0.2, style: "kelly" },
-  garden: { warmth: 0.5, luminosity: 0.5, turbulence: 0.2, style: "kelly" },
-  friend: { warmth: 0.5, luminosity: 0.4, turbulence: 0.2, style: "kelly" },
-  laugh: { warmth: 0.6, luminosity: 0.6, turbulence: 0.4, style: "kelly" },
-  festival: { warmth: 0.6, luminosity: 0.5, turbulence: 0.5, style: "kelly" },
-  golden: { warmth: 0.7, luminosity: 0.7, turbulence: 0.2, style: "kelly" },
-  wine: { warmth: 0.6, luminosity: 0.2, turbulence: 0.2, style: "kelly" },
+  // Joy / warmth / celebration -- Louis's vibrant, poured color
+  joy: { warmth: 0.8, luminosity: 0.6, turbulence: 0.3, style: "louis" },
+  happy: { warmth: 0.7, luminosity: 0.6, turbulence: 0.3, style: "louis" },
+  love: { warmth: 0.7, luminosity: 0.4, turbulence: 0.2, style: "louis" },
+  dance: { warmth: 0.5, luminosity: 0.4, turbulence: 0.5, style: "louis" },
+  party: { warmth: 0.6, luminosity: 0.5, turbulence: 0.5, style: "louis" },
+  summer: { warmth: 0.8, luminosity: 0.6, turbulence: 0.3, style: "louis" },
+  sunshine: { warmth: 0.9, luminosity: 0.8, turbulence: 0.2, style: "louis" },
+  garden: { warmth: 0.5, luminosity: 0.5, turbulence: 0.2, style: "louis" },
+  friend: { warmth: 0.5, luminosity: 0.4, turbulence: 0.2, style: "louis" },
+  laugh: { warmth: 0.6, luminosity: 0.6, turbulence: 0.4, style: "louis" },
+  festival: { warmth: 0.6, luminosity: 0.5, turbulence: 0.5, style: "louis" },
+  golden: { warmth: 0.7, luminosity: 0.7, turbulence: 0.2, style: "louis" },
+  wine: { warmth: 0.6, luminosity: 0.2, turbulence: 0.2, style: "louis" },
 
   // Water / flow -- Marden's sinuous, fluid line
   ocean: { warmth: -0.3, luminosity: 0.3, turbulence: 0.4, style: "marden" },
@@ -117,21 +117,24 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   concerto: { warmth: 0, luminosity: 0.2, turbulence: 0.3, style: "rothko" },
   symphony: { warmth: 0, luminosity: 0.3, turbulence: 0.4, style: "rothko" },
 
-  // Geometric / playful -- Kelly's clean hard-edged shapes
-  geometry: { warmth: 0, luminosity: 0.1, turbulence: 0.2, style: "kelly" },
-  circle: { warmth: 0, luminosity: 0.2, turbulence: 0.15, style: "kelly" },
-  whimsy: { warmth: 0.2, luminosity: 0.4, turbulence: 0.2, style: "kelly" },
-  playful: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3, style: "kelly" },
-  child: { warmth: 0.3, luminosity: 0.5, turbulence: 0.25, style: "kelly" },
-  toy: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3, style: "kelly" },
-  puzzle: { warmth: 0.1, luminosity: 0.2, turbulence: 0.2, style: "kelly" },
+  // Geometric / playful -- no current painter works in clean hard-edged
+  // shapes (retired along with Kelly), so these just nudge warmth/
+  // luminosity/turbulence without a style hint.
+  geometry: { warmth: 0, luminosity: 0.1, turbulence: 0.2 },
+  circle: { warmth: 0, luminosity: 0.2, turbulence: 0.15 },
+  whimsy: { warmth: 0.2, luminosity: 0.4, turbulence: 0.2 },
+  playful: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3 },
+  child: { warmth: 0.3, luminosity: 0.5, turbulence: 0.25 },
+  toy: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3 },
+  puzzle: { warmth: 0.1, luminosity: 0.2, turbulence: 0.2 },
 
-  // Industrial / urban / architectural -- Kelly's hard-edged flat forms
-  city: { warmth: -0.1, luminosity: -0.1, turbulence: 0.4, style: "kelly" },
-  street: { warmth: 0, luminosity: -0.1, turbulence: 0.35, style: "kelly" },
-  steel: { warmth: -0.3, luminosity: -0.1, turbulence: 0.4, style: "kelly" },
-  factory: { warmth: -0.2, luminosity: -0.2, turbulence: 0.5, style: "kelly" },
-  concrete: { warmth: -0.2, luminosity: -0.2, turbulence: 0.3, style: "kelly" },
+  // Industrial / urban / architectural -- likewise no current painter's
+  // hard-edged flat forms fit; warmth/luminosity/turbulence only.
+  city: { warmth: -0.1, luminosity: -0.1, turbulence: 0.4 },
+  street: { warmth: 0, luminosity: -0.1, turbulence: 0.35 },
+  steel: { warmth: -0.3, luminosity: -0.1, turbulence: 0.4 },
+  factory: { warmth: -0.2, luminosity: -0.2, turbulence: 0.5 },
+  concrete: { warmth: -0.2, luminosity: -0.2, turbulence: 0.3 },
 
   // Anxiety / vulnerability / the body -- Schiele's raw, angular unease
   anxiety: { warmth: -0.1, luminosity: -0.2, turbulence: 0.5, style: "schiele" },

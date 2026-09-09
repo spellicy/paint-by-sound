@@ -6,7 +6,7 @@ export type PaintStyleId =
   | "pollock"
   | "dekooning"
   | "schiele"
-  | "kelly"
+  | "louis"
   | "martin"
   | "marden";
 
@@ -38,9 +38,9 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     blurb: "Nervous angular contours, raw color hugging the line.",
   },
   {
-    id: "kelly",
-    label: "Kelly",
-    blurb: "Clean, hard-edged flat color forms.",
+    id: "louis",
+    label: "Morris Louis",
+    blurb: "Vibrant poured color, in parallel vertical stripes.",
   },
   {
     id: "martin",
@@ -57,10 +57,14 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
 /** Style groups with fundamentally different composition strategies. */
 export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
-export const FOCAL_STYLES: PaintStyleId[] = ["dekooning", "kelly"];
+export const FOCAL_STYLES: PaintStyleId[] = ["dekooning"];
 export const SPARSE_STYLES: PaintStyleId[] = ["schiele"];
 export const GRID_STYLES: PaintStyleId[] = ["martin"];
 export const FLOW_STYLES: PaintStyleId[] = ["marden"];
+/** Louis: parallel vertical color stripes, persistent across the piece --
+ * structurally similar to Rothko's horizontal fields (see FIELD_STYLES) but
+ * a distinct family since the geometry, palette, and edge technique differ. */
+export const STRIPE_STYLES: PaintStyleId[] = ["louis"];
 
 /** Simulated position of the robotic arm's brush head on the canvas. */
 export interface ArmCursor {
