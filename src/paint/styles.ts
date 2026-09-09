@@ -22,6 +22,18 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   const reach = (12 + note.amplitude * 70) * reachJitter;
   const segments = 2 + Math.floor(rand() * 3);
   const baseWidth = 0.5 + note.amplitude * 1.8;
+  // A longer stroke (more segments) needs to visibly taper along its own
+  // length, not just vary at random from one note's mark to the next --
+  // real flung paint runs thick where the stick made contact and thins as
+  // it trails off (or the reverse, building toward a stopping blot).
+  // How MUCH the width swings around that taper -- rather than following
+  // it smoothly -- is driven by the note's timbre: a bright/harsh sound
+  // gets a rougher, more erratic line; a dull/warm one stays closer to a
+  // clean taper. Whether the thick end lands at the start or the tail
+  // leans toward "start" on an onset (the moment of impact) and is a
+  // toss-up otherwise.
+  const jitterAmount = 0.22 + note.brightness * 1.1;
+  const thickAtStart = note.isOnset ? rand() < 0.75 : rand() < 0.5;
 
   ctx.save();
   ctx.lineCap = "round";
@@ -41,8 +53,10 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
     // was set right before that one stroke() call, not per segment, so
     // separate strokes are what actually makes the line vary along its
     // length rather than coming out one uniform thickness.
-    const widthJitter = rand() < 0.2 ? 0.25 + rand() * 0.3 : 0.6 + rand() * 1.3;
-    ctx.lineWidth = Math.max(0.35, baseWidth * widthJitter);
+    const t = i / Math.max(1, segments - 1);
+    const taper = thickAtStart ? 1 - t * 0.7 : 0.3 + t * 0.7;
+    const noise = 1 + (rand() - 0.5) * jitterAmount;
+    ctx.lineWidth = Math.max(0.3, baseWidth * taper * noise);
     ctx.strokeStyle = color.rgba(0.5 + rand() * 0.35);
     ctx.beginPath();
     ctx.moveTo(px, py);
