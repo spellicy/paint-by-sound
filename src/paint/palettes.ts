@@ -37,16 +37,15 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [18, 42],
   },
   pollock: {
-    // A wide-open range rather than the historical enamel-and-earth
-    // palette -- hue tracks the note's own pitch almost freely (low
-    // huePull, anchors spread clear around the wheel) and saturation/
-    // lightness stretch from near-black shadow to fully vivid, so louder
-    // and brighter notes read as a dramatic swing rather than a variation
-    // on the same muted umber.
+    // Hue tracks the note's own pitch almost freely (low huePull, anchors
+    // spread clear around the wheel). Saturation/lightness sit at a
+    // moderate baseline here -- the dramatic swing from near-black/muted
+    // to fully vivid now comes mainly from the major/minor key (see
+    // stylizeColor), not from every note maxing out the range on its own.
     signatureHues: [0, 45, 90, 150, 200, 260, 300],
     huePull: 0.18,
-    saturation: [12, 96],
-    lightness: [6, 88],
+    saturation: [15, 55],
+    lightness: [10, 50],
   },
   dekooning: {
     // Flesh pink, cadmium red and yellow -- tightly clustered warm
@@ -54,11 +53,13 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     // a note's raw pitch-hue doesn't share with that warm cluster
     // showing through as leftover cool clash (blue, green), rather than
     // handing an entire zone of the wheel over to one dedicated accent
-    // anchor, which read as far too much cyan/blue in practice.
+    // anchor, which read as far too much cyan/blue in practice. Baseline
+    // saturation/lightness are moderate; key mood does the heavy lifting
+    // (see stylizeColor), on top of his own minor-key ease to grayscale.
     signatureHues: [350, 20, 50],
     huePull: 0.45,
-    saturation: [40, 80],
-    lightness: [28, 68],
+    saturation: [26, 55],
+    lightness: [20, 50],
   },
   schiele: {
     // Burnt red-orange, ochre, and a sickly olive green -- muted and
@@ -66,38 +67,42 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     // browns against a mostly bare, pale ground.
     signatureHues: [15, 35, 90],
     huePull: 0.55,
-    saturation: [20, 50],
-    lightness: [26, 64],
+    saturation: [15, 40],
+    lightness: [18, 48],
   },
   louis: {
     // The stain paintings drew on the full spectrum of pure, transparent
     // acrylic hues -- cadmium red, orange, cadmium yellow, viridian,
-    // ultramarine, violet -- run vivid and side by side, never muted or
-    // earthy the way Pollock's or Schiele's palettes are.
+    // ultramarine, violet. Baseline sits at a moderate, still-recognizably
+    // vivid range; a confident major key pushes it to the truly saturated
+    // stain-painting look, minor mutes it toward a duller, faded canvas.
     signatureHues: [5, 30, 55, 140, 210, 265, 320],
     huePull: 0.6,
-    saturation: [58, 85],
-    lightness: [40, 58],
+    saturation: [30, 58],
+    lightness: [24, 46],
   },
   martin: {
-    // Barely-there pale washes behind a fine graphite grid, but drawn from
-    // a full twelve-anchor wheel (one per pitch class) rather than just
-    // three -- her lines stay quiet and pale, but which quiet pale hue a
-    // given row lands on ranges much further than tan/blue/pink alone.
+    // Barely-there pale washes behind a fine graphite grid, drawn from a
+    // full twelve-anchor wheel (one per pitch class) rather than just
+    // three. Lightness ceiling is pulled in from near-white so the
+    // default doesn't read blinding-bright; a major key lifts it back
+    // toward that pale glow, a minor key darkens it into a visibly muted
+    // grey wash.
     signatureHues: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
     huePull: 0.5,
-    saturation: [5, 20],
-    lightness: [75, 92],
+    saturation: [5, 16],
+    lightness: [60, 82],
   },
   marden: {
-    // A gentle hue pull rather than the near-monochrome lock of before --
-    // low huePull lets each stroke wander much further from the three
-    // anchors, so the color drifts loosely across a piece instead of
-    // settling on essentially one fixed hue.
+    // A gentle hue pull -- low huePull lets each stroke wander much
+    // further from the six anchors, so the color drifts loosely across a
+    // piece instead of settling on one fixed hue. Baseline saturation/
+    // lightness are subdued; key mood swings it toward vivid (major) or
+    // near-desaturated dark (minor).
     signatureHues: [30, 90, 150, 200, 260, 320],
     huePull: 0.28,
-    saturation: [18, 62],
-    lightness: [22, 68],
+    saturation: [14, 38],
+    lightness: [16, 42],
   },
 };
 
@@ -129,14 +134,20 @@ const COOL_ANCHOR = 218; // blue
  * uniform neon rainbow regardless of who's "painting."
  *
  * `key` is the live major/minor estimate (`src/audio/keyDetector.ts`) --
- * major leans the whole palette brighter and a touch more saturated, minor
- * leans it darker and more muted, the same emotional shorthand major/minor
+ * major leans the palette brighter and more vividly saturated, minor leans
+ * it darker and more muted, the same emotional shorthand major/minor
  * already carries for composers and listeners, confidence-scaled so an
- * ambiguous or just-started piece barely shifts. **de Kooning** gets one
- * further step: on minor-key material, his hot flesh/red/yellow palette
- * eases toward black-and-white as confidence climbs -- evoking the stark
- * black enamel paintings he turned to in the late 1940s -- while major-key
- * pieces keep his usual heated coloring.
+ * ambiguous or just-started piece barely shifts. Every painter but Rothko
+ * (whose subtle luminous layering was already well-tuned) gets a much
+ * larger swing than a simple offset -- saturation scales multiplicatively
+ * and lightness shifts by a wide margin, so a confident major-key piece
+ * reads as genuinely vivid and a confident minor-key piece as genuinely
+ * dark and muted, rather than each painter's palette looking similarly
+ * bright regardless of mood. **de Kooning** gets one further step: on
+ * minor-key material, his hot flesh/red/yellow palette eases toward
+ * black-and-white as confidence climbs -- evoking the stark black enamel
+ * paintings he turned to in the late 1940s -- while major-key pieces keep
+ * his usual heated coloring.
  */
 export function stylizeColor(
   raw: NoteColor,
@@ -173,17 +184,33 @@ export function stylizeColor(
   );
   lightness = clamp(lightness + theme.luminosity * 10, 8, 92);
 
-  if (key.mode === "major") {
-    lightness = clamp(lightness + key.confidence * 9, 6, 94);
-    saturation = clamp(saturation + key.confidence * 7, 0, 100);
+  if (styleId === "rothko") {
+    // Rothko's luminous layering already reads well with a subtle nudge --
+    // leave his original, gentler mood swing alone.
+    if (key.mode === "major") {
+      lightness = clamp(lightness + key.confidence * 9, 6, 94);
+      saturation = clamp(saturation + key.confidence * 7, 0, 100);
+    } else if (key.mode === "minor") {
+      lightness = clamp(lightness - key.confidence * 9, 6, 94);
+      saturation = clamp(saturation - key.confidence * 6, 0, 100);
+    }
+  } else if (key.mode === "major") {
+    // A confident major key pushes well past this painter's moderate
+    // baseline into genuinely vivid, bright territory.
+    const c = key.confidence;
+    saturation = clamp(saturation * (1 + 0.6 * c) + c * 6, 0, 100);
+    lightness = clamp(lightness + c * 22, 6, 94);
   } else if (key.mode === "minor") {
-    lightness = clamp(lightness - key.confidence * 9, 6, 94);
-    saturation = clamp(saturation - key.confidence * 6, 0, 100);
+    // A confident minor key pulls well below the baseline into genuinely
+    // dark, muted territory -- not just a faint dimming.
+    const c = key.confidence;
+    saturation = clamp(saturation * (1 - 0.65 * c), 0, 100);
+    lightness = clamp(lightness - c * 26, 6, 94);
 
     if (styleId === "dekooning") {
       // Ease toward grayscale as confidence in a minor key firms up,
       // rather than snapping the moment it crosses a threshold.
-      const bw = clamp((key.confidence - 0.3) / 0.5, 0, 1);
+      const bw = clamp((c - 0.3) / 0.5, 0, 1);
       saturation = saturation * (1 - bw) + 3 * bw;
     }
   }
