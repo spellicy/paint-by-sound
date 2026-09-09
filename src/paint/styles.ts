@@ -38,33 +38,53 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  let px = cursor.x;
-  let py = cursor.y;
+
+  // Lay down the raw waypoints of a whip-like walk first, heading drifting
+  // smoothly with only occasional sharper flicks -- then render them as one
+  // continuous curve (below), rather than each segment being its own
+  // independently-bowed arc. Bowing every segment the same fixed amount
+  // relative to its own heading, with no relation to the segment before or
+  // after it, is what made the line read as a chain of separate crescents
+  // meeting at corners instead of one fluid stroke.
+  const pts: { x: number; y: number }[] = [{ x: cursor.x, y: cursor.y }];
   let heading = rand() * TAU;
   for (let i = 0; i < segments; i++) {
-    heading += (rand() - 0.5) * 2.6;
+    heading += (rand() - 0.5) * (rand() < 0.15 ? 2.0 : 0.85);
     const segLen = (reach / segments) * (0.6 + rand() * 0.8);
-    const nx = px + Math.cos(heading) * segLen;
-    const ny = py + Math.sin(heading) * segLen;
-    const cx = px + Math.cos(heading - 0.6) * segLen * 0.5;
-    const cy = py + Math.sin(heading - 0.6) * segLen * 0.5;
-    // Each segment gets its own stroke (and so its own width/alpha) --
-    // a single path stroked once only ever renders with whatever width
-    // was set right before that one stroke() call, not per segment, so
-    // separate strokes are what actually makes the line vary along its
-    // length rather than coming out one uniform thickness.
+    const prev = pts[i];
+    pts.push({ x: prev.x + Math.cos(heading) * segLen, y: prev.y + Math.sin(heading) * segLen });
+  }
+
+  // Each piece curves toward the *next* raw waypoint but stops short, at
+  // the midpoint between that waypoint and the one after it -- the
+  // standard trick for turning a jagged polyline into one smooth curve.
+  // Because each piece starts exactly where the previous one's curve
+  // ended, the tangent is continuous at every join: the whole stroke reads
+  // as one fluid line, not a chain of separately-bowed arcs meeting at
+  // corners. Still stroked piece by piece (not as one path) so each can
+  // carry its own width.
+  let curX = pts[0].x;
+  let curY = pts[0].y;
+  for (let i = 0; i < segments; i++) {
+    const ctrl = pts[i + 1];
+    const isLast = i === segments - 1;
+    const targetX = isLast ? pts[segments].x : (pts[i + 1].x + pts[i + 2].x) / 2;
+    const targetY = isLast ? pts[segments].y : (pts[i + 1].y + pts[i + 2].y) / 2;
+
     const t = i / Math.max(1, segments - 1);
     const taper = thickAtStart ? 1 - t * 0.7 : 0.3 + t * 0.7;
     const noise = 1 + (rand() - 0.5) * jitterAmount;
     ctx.lineWidth = Math.max(0.3, baseWidth * taper * noise);
     ctx.strokeStyle = color.rgba(0.5 + rand() * 0.35);
     ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.quadraticCurveTo(cx, cy, nx, ny);
+    ctx.moveTo(curX, curY);
+    ctx.quadraticCurveTo(ctrl.x, ctrl.y, targetX, targetY);
     ctx.stroke();
-    px = nx;
-    py = ny;
+    curX = targetX;
+    curY = targetY;
   }
+  let px = curX;
+  let py = curY;
 
   // Occasionally the stick dumped extra paint mid-gesture -- a small
   // pooled blob (an irregular, lobed splotch, not a perfect circle)
