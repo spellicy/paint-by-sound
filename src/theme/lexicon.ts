@@ -117,16 +117,15 @@ export const MOOD_LEXICON: Record<string, LexiconEntry> = {
   concerto: { warmth: 0, luminosity: 0.2, turbulence: 0.3, style: "rothko" },
   symphony: { warmth: 0, luminosity: 0.3, turbulence: 0.4, style: "rothko" },
 
-  // Geometric / playful -- no current painter works in clean hard-edged
-  // shapes (retired along with Kelly), so these just nudge warmth/
-  // luminosity/turbulence without a style hint.
-  geometry: { warmth: 0, luminosity: 0.1, turbulence: 0.2 },
-  circle: { warmth: 0, luminosity: 0.2, turbulence: 0.15 },
-  whimsy: { warmth: 0.2, luminosity: 0.4, turbulence: 0.2 },
-  playful: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3 },
-  child: { warmth: 0.3, luminosity: 0.5, turbulence: 0.25 },
-  toy: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3 },
-  puzzle: { warmth: 0.1, luminosity: 0.2, turbulence: 0.2 },
+  // Geometric / playful -- Kandinsky's circles are the closest sensibility
+  // match: playful, musical abstraction built from simple round forms.
+  geometry: { warmth: 0, luminosity: 0.1, turbulence: 0.2, style: "kandinsky" },
+  circle: { warmth: 0, luminosity: 0.2, turbulence: 0.15, style: "kandinsky" },
+  whimsy: { warmth: 0.2, luminosity: 0.4, turbulence: 0.2, style: "kandinsky" },
+  playful: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3, style: "kandinsky" },
+  child: { warmth: 0.3, luminosity: 0.5, turbulence: 0.25, style: "kandinsky" },
+  toy: { warmth: 0.3, luminosity: 0.5, turbulence: 0.3, style: "kandinsky" },
+  puzzle: { warmth: 0.1, luminosity: 0.2, turbulence: 0.2, style: "kandinsky" },
 
   // Industrial / urban / architectural -- likewise no current painter's
   // hard-edged flat forms fit; warmth/luminosity/turbulence only.

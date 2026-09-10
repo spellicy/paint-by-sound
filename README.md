@@ -66,6 +66,7 @@ painting, and the painters who carried that lineage into minimalism:
 | de Kooning | Two or three slashing strokes piled up in different directions per mark, overlaid with an independent looping black contour line and a palette-knife scrape, across focal areas | Hot flesh pink, cadmium red and yellow, clashing with whatever cool leftover a pitch's hue doesn't share with that warm cluster |
 | Schiele | **Sparse** — a handful of isolated, angular contour marks across a mostly bare canvas, arm jumps between well-separated positions; each mark is a nervous multi-segment line with sharp elbows, never a smooth curve | Muted burnt red-orange, ochre and sickly olive, applied as a wash that hugs the contour and thins moving inward rather than filling evenly |
 | Louis | **Stripe** — several narrow vertical color bands, each fed by its own pitch register and building up over the piece; bare canvas shows between them | Full spectrum of pure, vivid poured hues — red, orange, yellow, viridian, ultramarine, violet — never muted or earthy |
+| Kandinsky | **All-over** — overlapping soft-edged circles of varying size scattered across the entire canvas, sometimes nested as a few concentric rings in a shifted hue, occasionally ringed in white or near-black | Jewel-toned primaries and secondaries spread across nearly the whole wheel, so overlaps read as genuinely different colors rather than shades of one family |
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale washes drawn from a full twelve-hue wheel, one per pitch class, rather than just a few |
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
 
@@ -83,8 +84,8 @@ red/yellow palette eases toward black-and-white as confidence climbs —
 evoking the stark black enamel paintings he turned to in the late 1940s —
 while major-key pieces keep his normal heated coloring.
 
-The focal family (currently just de Kooning) plus Pollock is phase-aware via
-`PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
+The focal family (currently just de Kooning) plus the all-over family
+(Pollock, Kandinsky) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
 music (loudness trend, onset density, how sustained or percussive things
 are) and puts the engine into one of four phases:
 
@@ -127,10 +128,11 @@ flowing line, or a scatter of Schiele's isolated contours, never as separate
 representational drawing code (`PaintEngine.paintMotifUnderlay`,
 `src/paint/motifs.ts`). It's a bias, not a template: the music-driven
 painting in `paintNote` keeps
-running exactly as before, layered on top. Pollock's genuinely all-over
-technique explicitly has no fixed subject (that's the whole point of
-Pollock), so it opts out of shape bias entirely and only picks up the
-subject's palette lean, the same as an untitled piece would.
+running exactly as before, layered on top. The all-over family's (Pollock,
+Kandinsky) technique explicitly has no fixed subject (that's the whole
+point of all-over composition), so it opts out of shape bias entirely and
+only picks up the subject's palette lean, the same as an untitled piece
+would.
 
 Finished paintings can be saved to an in-browser **exhibit catalog**
 (`IndexedDB`, holding up to 10 full-resolution pieces), each tagged with

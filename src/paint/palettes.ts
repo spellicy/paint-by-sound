@@ -8,10 +8,11 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 /**
  * Each painter worked with a limited, characteristic palette -- Rothko's
  * handful of deep, luminous field colors; Schiele's muted earth and flesh
- * tones; Louis's full spectrum of pure, vivid stain colors. This is the
- * opposite of one full-saturation rainbow hue wheel applied uniformly to
- * every style, which is what made every painting look the same neon
- * regardless of who was "painting."
+ * tones; Louis's full spectrum of pure, vivid stain colors; Kandinsky's
+ * jewel-toned primaries and secondaries spread across nearly the whole
+ * wheel. This is the opposite of one full-saturation rainbow hue wheel
+ * applied uniformly to every style, which is what made every painting look
+ * the same neon regardless of who was "painting."
  *
  * `signatureHues` are the anchor colors of that painter's world; `huePull`
  * (0..1) is how strongly a note's raw pitch-hue gets pulled toward the
@@ -80,6 +81,19 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     huePull: 0.6,
     saturation: [30, 58],
     lightness: [24, 46],
+  },
+  kandinsky: {
+    // The "Several Circles" / "Circles in a Circle" palette -- jewel-toned
+    // primaries and secondaries (crimson, gold, cobalt, emerald, violet)
+    // spread across nearly the whole wheel rather than clustered in one
+    // family, so overlapping circles read as genuinely different colors.
+    // Baseline is moderate; a confident major key pushes the whole piece
+    // toward the fully saturated jewel-tone look, minor mutes it toward
+    // duskier, shadowed color.
+    signatureHues: [0, 35, 55, 85, 130, 175, 210, 250, 285, 320],
+    huePull: 0.35,
+    saturation: [35, 62],
+    lightness: [28, 50],
   },
   martin: {
     // Barely-there pale washes behind a fine graphite grid, drawn from a

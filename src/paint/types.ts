@@ -7,6 +7,7 @@ export type PaintStyleId =
   | "dekooning"
   | "schiele"
   | "louis"
+  | "kandinsky"
   | "martin"
   | "marden";
 
@@ -43,6 +44,11 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     blurb: "Vibrant poured color, in parallel vertical stripes.",
   },
   {
+    id: "kandinsky",
+    label: "Kandinsky",
+    blurb: "Overlapping translucent circles in vivid jewel tones.",
+  },
+  {
     id: "martin",
     label: "Martin",
     blurb: "Quiet, meditative pencil-fine grids.",
@@ -55,7 +61,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
 ];
 
 /** Style groups with fundamentally different composition strategies. */
-export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock"];
+export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
 export const FOCAL_STYLES: PaintStyleId[] = ["dekooning"];
 export const SPARSE_STYLES: PaintStyleId[] = ["schiele"];

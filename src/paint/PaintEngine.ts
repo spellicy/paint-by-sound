@@ -137,9 +137,10 @@ export class PaintEngine {
     this.styleId = styleId;
     this.rothkoBands = [];
     this.louisStripes = [];
-    // Pollock's all-over technique explicitly has no fixed subject area
+    // The all-over family's technique explicitly has no fixed subject area
     // (see ALL_OVER_STYLES) -- drop any subject bias picked up under a
-    // previous style so switching to Pollock mid-piece stays true to that.
+    // previous style so switching to an all-over style mid-piece stays
+    // true to that.
     if (ALL_OVER_STYLES.includes(styleId)) this.motifAnchors = [];
   }
 
@@ -271,8 +272,11 @@ export class PaintEngine {
     this.cursor.y = clamp(biased.y, height * 0.03, height * 0.97);
   }
 
-  /** Pollock: a continuous gestural sweep that roams and bounces across the
-   * *entire* canvas -- true all-over composition, no fixed subject area. */
+  /** The all-over family (Pollock, Kandinsky): a continuous gestural sweep
+   * that roams and bounces across the *entire* canvas -- true all-over
+   * composition, no fixed subject area. Shared by both since it's a
+   * placement mechanic, not a look -- what each style actually draws at
+   * the cursor differs completely (see renderStroke). */
   private updateRoamCursor(
     frequency: number,
     amplitude: number,
@@ -282,12 +286,12 @@ export class PaintEngine {
     const { width, height } = this.canvas;
     const turbulence = this.theme.turbulence;
 
-    // Pollock's arm threw paint in discrete gestural flings, each in its
-    // own direction, not one path smoothly bending as it goes -- gradual
-    // heading drift alone traces out long, straight-ish bounces off the
-    // canvas edges once many short strokes are laid end to end along it.
-    // An occasional sharp, large turn -- on top of the gradual drift, not
-    // instead of it -- is what breaks that up into real Pollock chaos.
+    // The arm never traces one smoothly bending path -- each mark lands via
+    // its own fresh directional impulse, not gradual heading drift alone,
+    // which would trace long, straight-ish bounces off the canvas edges
+    // once many marks are laid end to end. An occasional sharp, large turn
+    // -- on top of the gradual drift, not instead of it -- is what breaks
+    // that up into real chaos.
     if (this.rand() < 0.16) {
       this.roamHeading += (this.rand() - 0.5) * Math.PI * 1.7;
     } else {
@@ -300,9 +304,10 @@ export class PaintEngine {
     }
 
     // A subject's shape keeps quietly reasserting itself over a full roam
-    // (empty for Pollock -- see setStyle -- so this is a no-op there). A
-    // pure post-hoc position nudge is too weak against this heading's own
-    // random drift, so steer the heading itself toward the nearest anchor
+    // (empty for all-over styles -- see setStyle -- so this is a no-op
+    // there). A pure post-hoc position nudge is too weak against this
+    // heading's own random drift, so steer the heading itself toward the
+    // nearest anchor
     // -- a gentle "gravity" on direction that still leaves plenty of room
     // for the random walk, rather than snapping the resulting position.
     const target = this.nearestMotifAnchor(this.cursor.x, this.cursor.y);
@@ -517,7 +522,8 @@ export class PaintEngine {
   /** Sustained, tonal passages are drawn as one continuous flowing line
    * tracing the melodic contour, rather than a stamp per note -- painting
    * reacting to the melody instead of to each isolated note. Used by the
-   * phase-aware focal family (de Kooning) and Pollock. */
+   * phase-aware focal family (de Kooning) and the all-over family
+   * (Pollock, Kandinsky). */
   private renderMelodicSegment(note: NoteEvent, color: NoteColor) {
     const width = 1 + note.amplitude * 5;
     if (this.lastMelodic && note.time - this.lastMelodic.time < 0.7) {
@@ -693,8 +699,8 @@ export class PaintEngine {
    * field band, to Marden a length of flowing line, to Schiele an isolated
    * angular contour.
    * This only ever lays a loose underlying composition; the music-driven
-   * painting in paintNote continues over it exactly as before. Pollock's
-   * all-over technique explicitly rejects a fixed subject (see
+   * painting in paintNote continues over it exactly as before. The
+   * all-over family's technique explicitly rejects a fixed subject (see
    * ALL_OVER_STYLES), so it's skipped there on purpose -- the subject
    * still leans the palette via the existing warmth/hueRotation channels,
    * just never an explicit shape. */
@@ -847,7 +853,8 @@ export class PaintEngine {
           this.rand() < 0.22
         ) {
           // An occasional accent in another focal style's brush technique,
-          // for emphasis. Pollock never participates -- see ACCENT_STYLES.
+          // for emphasis. The all-over family never participates -- see
+          // ACCENT_STYLES.
           // (No-op while FOCAL_STYLES has only one member -- kept general in
           // case a second focal-family painter is added later.)
           const others = ACCENT_STYLES.filter((s) => s !== this.styleId);

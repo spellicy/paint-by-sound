@@ -276,6 +276,41 @@ const schiele: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
+const kandinsky: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // Overlapping translucent circles in vivid, jewel-toned color -- the
+  // "Several Circles" / "Circles in a Circle" technique. Most marks are a
+  // single soft disk of varying size; sometimes a few concentric rings
+  // nest inside each other in a shifted hue, echoing how his rings often
+  // carried unrelated but harmonious colors rather than one flat fill.
+  const baseRadius = 4 + note.amplitude * 46;
+  const isBig = rand() < 0.25;
+  const radius = isBig ? baseRadius * (1.3 + rand() * 0.9) : baseRadius * (0.4 + rand() * 0.8);
+
+  ctx.save();
+  const rings = rand() < 0.35 ? 2 + Math.floor(rand() * 2) : 1;
+  for (let i = 0; i < rings; i++) {
+    const r = radius * (1 - (i / rings) * 0.62);
+    const hueShift = i === 0 ? 0 : (rand() - 0.5) * 70;
+    const hue = (color.hue + hueShift + 360) % 360;
+    const alpha = 0.48 + rand() * 0.3;
+    ctx.beginPath();
+    ctx.arc(cursor.x, cursor.y, Math.max(1, r), 0, TAU);
+    ctx.fillStyle = `hsla(${hue.toFixed(1)}, ${color.saturation.toFixed(0)}%, ${color.lightness.toFixed(0)}%, ${alpha.toFixed(3)})`;
+    ctx.fill();
+  }
+
+  // A crisp ring of white or near-black around some circles -- a graphic
+  // accent against the flat, soft-edged fills, as in the reference work.
+  if (rand() < 0.4) {
+    ctx.strokeStyle = rand() < 0.5 ? "rgba(250, 248, 240, 0.55)" : "rgba(10, 10, 12, 0.5)";
+    ctx.lineWidth = 0.8 + rand() * 1.4;
+    ctx.beginPath();
+    ctx.arc(cursor.x, cursor.y, radius, 0, TAU);
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
 const martin: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // A single fine, restrained horizontal line -- pale, hand-ruled, barely
   // varying -- the quiet grids built from thousands of nearly identical
@@ -332,6 +367,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   dekooning,
   schiele,
   louis,
+  kandinsky,
   martin,
   marden,
 };
