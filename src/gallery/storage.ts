@@ -13,11 +13,12 @@ const DB_VERSION = 1;
 const STORE_NAME = "gallery";
 const MAX_PIECES = 10;
 
-// Each saved piece is a full-resolution PNG data URL (roughly 1-1.5MB) --
-// localStorage's ~5MB per-origin quota only ever held 3-4 of those before
-// setItem started silently failing, well short of the intended cap.
-// IndexedDB's quota is a large fraction of free disk space, comfortably
-// holding MAX_PIECES full-resolution images.
+// Each saved piece is a full-resolution PNG data URL -- several megabytes
+// now that PaintEngine renders at a much higher backing-store resolution
+// for gallery quality (see RESOLUTION_SCALE). localStorage's ~5MB
+// per-origin quota couldn't even hold a single one of those, let alone
+// MAX_PIECES; IndexedDB's quota is a large fraction of free disk space,
+// comfortably holding all of them.
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);

@@ -76,6 +76,15 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
 
 const GRID_ROWS = 34;
 
+/** The canvas element's on-screen (CSS) size stays whatever App.tsx passes
+ * in -- every composition calculation below is expressed in that "logical"
+ * size, via `this.logicalWidth`/`this.logicalHeight`, so none of it needs to
+ * change here. The actual backing pixel buffer is set several times larger
+ * (see the constructor), which is what makes both live rendering and a
+ * gallery-saved PNG (`toDataURL` reads that same backing store) sharp
+ * rather than capped at a fairly low fixed raster. */
+const RESOLUTION_SCALE = 3;
+
 interface RothkoBand {
   yStart: number;
   yEnd: number;
@@ -97,6 +106,8 @@ export interface PaintEngineOptions {
 export class PaintEngine {
   private ctx: CanvasRenderingContext2D;
   private canvas: HTMLCanvasElement;
+  private logicalWidth: number;
+  private logicalHeight: number;
   private cursor: ArmCursor;
   private focal: ArmCursor;
   private nextFocalShiftAt = 5;
@@ -124,12 +135,23 @@ export class PaintEngine {
     if (!ctx) throw new Error("Canvas 2D context unavailable");
     this.ctx = ctx;
     this.styleId = opts.styleId;
-    this.cursor = { x: opts.canvas.width / 2, y: opts.canvas.height / 2 };
+
+    // Capture the element's current (CSS/logical) size before resizing its
+    // backing store, then scale the drawing context to match -- everything
+    // from here on draws in logical coordinates as before, but lands on a
+    // RESOLUTION_SCALE-times-denser pixel buffer.
+    this.logicalWidth = opts.canvas.width;
+    this.logicalHeight = opts.canvas.height;
+    opts.canvas.width = this.logicalWidth * RESOLUTION_SCALE;
+    opts.canvas.height = this.logicalHeight * RESOLUTION_SCALE;
+    this.ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+
+    this.cursor = { x: this.logicalWidth / 2, y: this.logicalHeight / 2 };
     this.focal = { ...this.cursor };
     this.rand = mulberry32(Date.now());
     this.roamHeading = this.rand() * Math.PI * 2;
     this.flowHeading = this.rand() * Math.PI * 2;
-    this.gridX = opts.canvas.width * 0.02;
+    this.gridX = this.logicalWidth * 0.02;
     this.onNoteRendered = opts.onNoteRendered;
   }
 
@@ -160,16 +182,16 @@ export class PaintEngine {
     this.ctx.globalCompositeOperation = "source-over";
     this.ctx.filter = "none";
     this.ctx.fillStyle = "#f7f3ec";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
     this.ctx.restore();
-    this.cursor = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
+    this.cursor = { x: this.logicalWidth / 2, y: this.logicalHeight / 2 };
     this.focal = { ...this.cursor };
     this.nextFocalShiftAt = 5;
     this.roamHeading = this.rand() * Math.PI * 2;
     this.flowHeading = this.rand() * Math.PI * 2;
     this.flowCurl = 0;
     this.gridRow = 0;
-    this.gridX = this.canvas.width * 0.02;
+    this.gridX = this.logicalWidth * 0.02;
     this.rothkoBands = [];
     this.louisStripes = [];
     this.phraseTracker.reset();
@@ -215,7 +237,8 @@ export class PaintEngine {
    * uniformly -- so a full track ends up visiting most of the canvas while
    * still building up compositions around areas of interest. */
   private retargetFocal() {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     const xFifths = [0.12, 0.3, 0.5, 0.7, 0.88];
     const yThirds = [0.18, 0.5, 0.82];
     this.focal = {
@@ -225,7 +248,8 @@ export class PaintEngine {
   }
 
   private updateFocalCursor(frequency: number, energyFast: number, elapsed: number) {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
 
     if (elapsed >= this.nextFocalShiftAt) {
       this.retargetFocal();
@@ -283,7 +307,8 @@ export class PaintEngine {
     stepScale: number,
     turnScale: number,
   ) {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     const turbulence = this.theme.turbulence;
 
     // The arm never traces one smoothly bending path -- each mark lands via
@@ -355,7 +380,8 @@ export class PaintEngine {
    * speed or spacing regardless of the music's energy. Meditative
    * repetition, not reaction. */
   private updateGridCursor(amplitude: number) {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     const step = width * (0.012 + amplitude * 0.01);
     this.gridX += step;
     if (this.gridX > width * 0.98) {
@@ -378,7 +404,8 @@ export class PaintEngine {
    * producing the long, sinuous single-line loops of his later work rather
    * than a jagged or energetic path. */
   private updateFlowCursor(frequency: number, amplitude: number) {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     const turbulence = this.theme.turbulence;
 
     this.flowCurl = clamp(
@@ -429,7 +456,8 @@ export class PaintEngine {
    * onset-only gating, this keeps the composition sparse over a full
    * track. */
   private updateSparseCursor() {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     // A named subject still reads as only a few, well-separated marks, not
     // continuous coverage -- so instead of a continuous positional bias
     // (which would fight the "jump to a new spot" character), occasionally
@@ -457,7 +485,7 @@ export class PaintEngine {
    * color bands rather than one wandering brush. */
   private ensureRothkoBands() {
     if (this.rothkoBands.length) return;
-    const { height } = this.canvas;
+    const height = this.logicalHeight;
     // Adjacent bands overlap by a few percent of height, rather than
     // leaving a hard-edged gap between them -- each band's own paint
     // already tapers to near-nothing at its true top/bottom (see
@@ -478,7 +506,7 @@ export class PaintEngine {
 
   private updateRothkoCursor(frequency: number): RothkoBand {
     this.ensureRothkoBands();
-    const { width } = this.canvas;
+    const width = this.logicalWidth;
     let index = 1;
     if (frequency > 0) {
       const midi = 69 + 12 * Math.log2(frequency / 440);
@@ -494,7 +522,8 @@ export class PaintEngine {
   /** A soft, translucent gradient sweep -- an underpainting wash laid down
    * before detail, and revisited on major dynamic shifts. */
   private renderWash(elapsed: number, color: NoteColor) {
-    const { width, height } = this.canvas;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
     const angle = this.rand() * Math.PI * 2;
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
@@ -559,7 +588,7 @@ export class PaintEngine {
     const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 10, 90);
 
     const bandHeight = band.yEnd - band.yStart;
-    const w = this.canvas.width * (0.28 + this.rand() * 0.4 + note.amplitude * 0.15);
+    const w = this.logicalWidth * (0.28 + this.rand() * 0.4 + note.amplitude * 0.15);
     const h = bandHeight * (0.35 + this.rand() * 0.35 + note.amplitude * 0.15);
     const alpha = 0.05 + note.amplitude * 0.05;
 
@@ -612,7 +641,7 @@ export class PaintEngine {
    * wide gaps Rothko's fields get. */
   private ensureLouisStripes() {
     if (this.louisStripes.length) return;
-    const { width } = this.canvas;
+    const width = this.logicalWidth;
     const count = 9;
     const margin = 0.08;
     const gap = 0.012;
@@ -632,7 +661,7 @@ export class PaintEngine {
 
   private updateLouisCursor(frequency: number): LouisStripe {
     this.ensureLouisStripes();
-    const { height } = this.canvas;
+    const height = this.logicalHeight;
     const count = this.louisStripes.length;
     let index = Math.floor(count / 2);
     if (frequency > 0) {
@@ -664,7 +693,7 @@ export class PaintEngine {
     const stripeWidth = stripe.xEnd - stripe.xStart;
     const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.05;
     const w = stripeWidth * (0.85 + this.rand() * 0.14);
-    const h = this.canvas.height * (0.12 + this.rand() * 0.14 + note.amplitude * 0.05);
+    const h = this.logicalHeight * (0.12 + this.rand() * 0.14 + note.amplitude * 0.05);
     const alpha = 0.45 + note.amplitude * 0.35;
 
     this.ctx.save();
@@ -712,7 +741,7 @@ export class PaintEngine {
     const { motifs, motifStrength, warmth } = this.theme;
     if (!motifs.length || motifStrength <= 0) return;
 
-    let marks = generateMotifMarks(motifs, this.canvas.width, this.canvas.height, this.rand, warmth);
+    let marks = generateMotifMarks(motifs, this.logicalWidth, this.logicalHeight, this.rand, warmth);
     // The full point cloud (before any thinning below) is what later
     // cursor updates gently bias toward, so the shape keeps reasserting
     // itself over the whole piece instead of only at the very start.
@@ -755,8 +784,8 @@ export class PaintEngine {
       } else {
         renderStroke(this.styleId, {
           ctx: this.ctx,
-          width: this.canvas.width,
-          height: this.canvas.height,
+          width: this.logicalWidth,
+          height: this.logicalHeight,
           cursor: this.cursor,
           note,
           color,
@@ -832,8 +861,8 @@ export class PaintEngine {
         // musical phase -- that's how those painters actually worked.
         renderStroke(this.styleId, {
           ctx: this.ctx,
-          width: this.canvas.width,
-          height: this.canvas.height,
+          width: this.logicalWidth,
+          height: this.logicalHeight,
           cursor: this.cursor,
           note,
           color,
@@ -870,8 +899,8 @@ export class PaintEngine {
 
         renderStroke(renderStyle, {
           ctx: this.ctx,
-          width: this.canvas.width,
-          height: this.canvas.height,
+          width: this.logicalWidth,
+          height: this.logicalHeight,
           cursor: this.cursor,
           note: boosted,
           color,

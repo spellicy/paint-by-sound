@@ -135,9 +135,12 @@ only picks up the subject's palette lean, the same as an untitled piece
 would.
 
 Finished paintings can be saved to an in-browser **exhibit catalog**
-(`IndexedDB`, holding up to 10 full-resolution pieces), each tagged with
-track name, style, and date — a small nod to the gallery catalog described
-in the original concept. Each piece can
+(`IndexedDB`, holding up to 10 pieces), each tagged with track name, style,
+and date — a small nod to the gallery catalog described in the original
+concept. The canvas renders at a backing-store resolution several times
+denser than its on-screen size (`PaintEngine`'s `RESOLUTION_SCALE`), so a
+saved piece stays sharp at full size rather than the modest, slightly soft
+raster a 1:1 screen capture would give. Each piece can
 be deleted (a trash icon on the thumbnail, always visible — not hover-only,
 so it works on touch devices) or saved out via the Web Share API
 (`src/gallery/saveImage.ts`), which opens the native "Save Image" sheet on
