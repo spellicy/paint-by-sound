@@ -41,7 +41,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
   {
     id: "louis",
     label: "Louis",
-    blurb: "Vibrant poured color, in parallel vertical stripes.",
+    blurb: "Watercolor-soft poured stripes that bleed into each other.",
   },
   {
     id: "kandinsky",

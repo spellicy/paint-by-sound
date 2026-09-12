@@ -675,10 +675,14 @@ export class PaintEngine {
     return stripe;
   }
 
-  /** Louis's poured stripes read as flat, confident, nearly-opaque color
-   * with a crisp (not hazy) edge -- the controlled "Stripe" paintings, not
-   * the softer bled "Veils". Width stays close to the stripe's own bounds
-   * so it doesn't bridge the thin gap into a neighbor. */
+  /** Louis's poured "Veils" read as soft, translucent washes rather than
+   * flat confident pigment -- thinned acrylic soaking into raw, unprimed
+   * canvas and spreading wet-into-wet, so a stripe's color never stops in
+   * a clean line at its own boundary. Each mark is wider than the
+   * stripe's own lane and faded at both edges via a gradient, so it pools
+   * across the gap and visibly bleeds into whichever stripe sits next
+   * door -- overlapping washes from neighboring stripes optically blend
+   * into a genuinely new in-between color, the way real watercolor does. */
   private renderLouisStripe(note: NoteEvent, stripe: LouisStripe, rawColor: NoteColor) {
     if (stripe.hue === null) {
       stripe.hue = this.pickDistinctStripeHue(stripe, rawColor.hue);
@@ -687,19 +691,32 @@ export class PaintEngine {
       stripe.hue = this.pickDistinctStripeHue(stripe, rawColor.hue);
     }
     const hue = (stripe.hue + (this.rand() - 0.5) * 6 + 360) % 360;
-    const sat = clamp(rawColor.saturation + 5, 55, 88);
-    const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 32, 54);
+    // Watercolor washes read as translucent, not as flat opaque pigment --
+    // pull saturation in a little and keep alpha modest (below) rather
+    // than the confident, near-opaque fill the old "Stripes" look used.
+    const sat = clamp(rawColor.saturation - 8, 35, 75);
+    const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 34, 58);
 
     const stripeWidth = stripe.xEnd - stripe.xStart;
-    const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.05;
-    const w = stripeWidth * (0.85 + this.rand() * 0.14);
-    const h = this.logicalHeight * (0.12 + this.rand() * 0.14 + note.amplitude * 0.05);
-    const alpha = 0.45 + note.amplitude * 0.35;
+    const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.2;
+    const w = stripeWidth * (1.4 + this.rand() * 1.1);
+    const h = this.logicalHeight * (0.14 + this.rand() * 0.18 + note.amplitude * 0.06);
+    const peakAlpha = 0.18 + note.amplitude * 0.2;
+
+    const left = cx - w / 2;
+    const right = cx + w / 2;
+    const core = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${peakAlpha.toFixed(3)})`;
+    const edge = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, 0)`;
+    const grad = this.ctx.createLinearGradient(left, 0, right, 0);
+    grad.addColorStop(0, edge);
+    grad.addColorStop(0.28, core);
+    grad.addColorStop(0.72, core);
+    grad.addColorStop(1, edge);
 
     this.ctx.save();
-    this.ctx.filter = "blur(1.5px)";
-    this.ctx.fillStyle = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha.toFixed(3)})`;
-    this.ctx.fillRect(cx - w / 2, this.cursor.y - h / 2, w, h);
+    this.ctx.filter = "blur(8px)";
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(left, this.cursor.y - h / 2, w, h);
     this.ctx.restore();
   }
 
