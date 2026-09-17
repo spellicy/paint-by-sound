@@ -320,9 +320,20 @@ const delaunay: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // by neighboring shapes or the canvas edge. Drawn largest ring first,
   // each smaller ring painted on top, so only an annular band of each
   // larger ring stays visible.
+  //
+  // Size varies independently of amplitude, not just scaled by it -- his
+  // discs range from small satellite circles to canvas-filling targets
+  // within the same piece, not one fairly uniform size throughout.
   const baseRadius = 10 + note.amplitude * 60;
-  const rings = 4 + Math.floor(rand() * 4);
-  const ringStep = baseRadius / rings;
+  const sizeRoll = rand();
+  const radius =
+    sizeRoll < 0.18
+      ? baseRadius * (0.22 + rand() * 0.28) // small
+      : sizeRoll < 0.8
+        ? baseRadius * (0.6 + rand() * 0.5) // medium -- the common case
+        : baseRadius * (1.3 + rand() * 1.5); // large
+  const rings = 3 + Math.floor(rand() * 3) + (radius > baseRadius ? 1 : 0);
+  const ringStep = radius / rings;
   const hueStep = 26 + rand() * 10;
 
   const shapeRoll = rand();
