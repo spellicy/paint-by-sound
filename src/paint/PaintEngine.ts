@@ -296,7 +296,7 @@ export class PaintEngine {
     this.cursor.y = clamp(biased.y, height * 0.03, height * 0.97);
   }
 
-  /** The all-over family (Pollock, Kandinsky): a continuous gestural sweep
+  /** The all-over family (Pollock, Kandinsky, Delaunay): a continuous gestural sweep
    * that roams and bounces across the *entire* canvas -- true all-over
    * composition, no fixed subject area. Shared by both since it's a
    * placement mechanic, not a look -- what each style actually draws at
@@ -552,7 +552,7 @@ export class PaintEngine {
    * tracing the melodic contour, rather than a stamp per note -- painting
    * reacting to the melody instead of to each isolated note. Used by the
    * phase-aware focal family (de Kooning) and the all-over family
-   * (Pollock, Kandinsky). */
+   * (Pollock, Kandinsky, Delaunay). */
   private renderMelodicSegment(note: NoteEvent, color: NoteColor) {
     const width = 1 + note.amplitude * 5;
     if (this.lastMelodic && note.time - this.lastMelodic.time < 0.7) {

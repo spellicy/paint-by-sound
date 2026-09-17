@@ -311,6 +311,62 @@ const kandinsky: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.restore();
 };
 
+const delaunay: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // "Simultaneous Disks" / "Rythme": concentric flat-color rings, stepping
+  // through the spectrum ring to ring rather than blending or fading --
+  // Orphism's hard-edged, opaque color contrast, the opposite of
+  // Kandinsky's soft translucent overlaps. Occasionally only a half or a
+  // quarter of the disc is drawn, echoing how his discs read as cropped
+  // by neighboring shapes or the canvas edge. Drawn largest ring first,
+  // each smaller ring painted on top, so only an annular band of each
+  // larger ring stays visible.
+  const baseRadius = 10 + note.amplitude * 60;
+  const rings = 4 + Math.floor(rand() * 4);
+  const ringStep = baseRadius / rings;
+  const hueStep = 26 + rand() * 10;
+
+  const shapeRoll = rand();
+  let startAngle = 0;
+  let endAngle = TAU;
+  if (shapeRoll < 0.35) {
+    const rot = rand() * TAU;
+    startAngle = rot;
+    endAngle = rot + Math.PI;
+  } else if (shapeRoll < 0.6) {
+    const rot = rand() * TAU;
+    startAngle = rot;
+    endAngle = rot + Math.PI / 2;
+  }
+
+  ctx.save();
+  for (let i = rings; i >= 1; i--) {
+    const r = ringStep * i;
+    let fill: string;
+    const achromaticRoll = rand();
+    if (achromaticRoll < 0.12) {
+      fill = "hsl(0, 0%, 8%)";
+    } else if (achromaticRoll < 0.2) {
+      fill = "hsl(0, 0%, 92%)";
+    } else {
+      const hue = (color.hue + i * hueStep + (rand() - 0.5) * 8 + 360) % 360;
+      const sat = clamp(color.saturation + 10, 55, 92);
+      const light = clamp(color.lightness + (i % 2 === 0 ? 6 : -6), 22, 62);
+      fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
+    }
+    ctx.beginPath();
+    ctx.moveTo(cursor.x, cursor.y);
+    ctx.arc(cursor.x, cursor.y, Math.max(1, r), startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
+}
+
 const martin: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // A single fine, restrained horizontal line -- pale, hand-ruled, barely
   // varying -- the quiet grids built from thousands of nearly identical
@@ -368,6 +424,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   schiele,
   louis,
   kandinsky,
+  delaunay,
   martin,
   marden,
 };

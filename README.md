@@ -48,7 +48,7 @@ between notes (no snapping to fixed steps), plus a slow palette drift over
 the piece and per-stroke jitter, so the same note never paints quite the
 same way twice.
 
-### Seven painters, seven different techniques
+### Nine painters, nine different techniques
 
 Each style isn't just a different brush shape on a shared engine — it has
 its own **composition strategy** (how the simulated arm moves and how much
@@ -67,6 +67,7 @@ painting, and the painters who carried that lineage into minimalism:
 | Schiele | **Sparse** — a handful of isolated, angular contour marks across a mostly bare canvas, arm jumps between well-separated positions; each mark is a nervous multi-segment line with sharp elbows, never a smooth curve | Muted burnt red-orange, ochre and sickly olive, applied as a wash that hugs the contour and thins moving inward rather than filling evenly |
 | Louis | **Stripe** — several narrow vertical color bands, each fed by its own pitch register and building up over the piece; soft, translucent-wash edges bleed across the gap into their neighbors, watercolor-style, rather than stopping in a clean line | Full spectrum of pure, vivid poured hues — red, orange, yellow, viridian, ultramarine, violet — never muted or earthy |
 | Kandinsky | **All-over** — overlapping soft-edged circles of varying size scattered across the entire canvas, sometimes nested as a few concentric rings in a shifted hue, occasionally ringed in white or near-black | Jewel-toned primaries and secondaries spread across nearly the whole wheel, so overlaps read as genuinely different colors rather than shades of one family |
+| Delaunay | **All-over** — concentric flat-color rings scattered across the canvas like his "Simultaneous Disks," largest ring first with each smaller one painted on top; sometimes only a half or a quarter of the disc appears, as if cropped by a neighboring shape | Full color-wheel spectrum in flat, high-contrast bands, punctuated by black and white/grey rings for structure — hard-edged, never blended |
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale washes drawn from a full twelve-hue wheel, one per pitch class, rather than just a few |
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
 
@@ -85,7 +86,7 @@ evoking the stark black enamel paintings he turned to in the late 1940s —
 while major-key pieces keep his normal heated coloring.
 
 The focal family (currently just de Kooning) plus the all-over family
-(Pollock, Kandinsky) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
+(Pollock, Kandinsky, Delaunay) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
 music (loudness trend, onset density, how sustained or percussive things
 are) and puts the engine into one of four phases:
 

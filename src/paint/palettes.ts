@@ -10,9 +10,10 @@ const NEUTRAL_KEY: KeyEstimate = { mode: null, tonic: null, confidence: 0 };
  * handful of deep, luminous field colors; Schiele's muted earth and flesh
  * tones; Louis's full spectrum of pure, vivid stain colors; Kandinsky's
  * jewel-toned primaries and secondaries spread across nearly the whole
- * wheel. This is the opposite of one full-saturation rainbow hue wheel
- * applied uniformly to every style, which is what made every painting look
- * the same neon regardless of who was "painting."
+ * wheel; Delaunay's flat, high-contrast full-spectrum color wedges. This
+ * is the opposite of one full-saturation rainbow hue wheel applied
+ * uniformly to every style, which is what made every painting look the
+ * same neon regardless of who was "painting."
  *
  * `signatureHues` are the anchor colors of that painter's world; `huePull`
  * (0..1) is how strongly a note's raw pitch-hue gets pulled toward the
@@ -94,6 +95,17 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     huePull: 0.35,
     saturation: [35, 62],
     lightness: [28, 50],
+  },
+  delaunay: {
+    // Orphism's "Simultaneous Contrasts" -- the full color-wheel spectrum
+    // run in flat, confident, high-contrast bands rather than blended or
+    // translucent, punctuated by the black/white/grey rings his discs also
+    // leaned on for structure. Baseline moderate; major pushes toward the
+    // fully saturated color-wheel look, minor mutes it toward shadow.
+    signatureHues: [5, 40, 65, 100, 140, 185, 220, 260, 300, 335],
+    huePull: 0.4,
+    saturation: [35, 65],
+    lightness: [28, 52],
   },
   martin: {
     // Barely-there pale washes behind a fine graphite grid, drawn from a
