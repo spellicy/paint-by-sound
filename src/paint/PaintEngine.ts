@@ -83,7 +83,7 @@ const GRID_ROWS = 34;
  * (see the constructor), which is what makes both live rendering and a
  * gallery-saved PNG (`toDataURL` reads that same backing store) sharp
  * rather than capped at a fairly low fixed raster. */
-const RESOLUTION_SCALE = 3;
+const RESOLUTION_SCALE = 2;
 
 interface RothkoBand {
   yStart: number;
