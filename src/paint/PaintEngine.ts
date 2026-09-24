@@ -632,19 +632,18 @@ export class PaintEngine {
     return hue;
   }
 
-  /** Louis: canvas divided into several narrow, closely-spaced vertical
-   * stripes, each its own persistent poured color; pitch register selects
-   * which stripe a note feeds, and the cursor lands anywhere along that
-   * stripe's full height. The real "Stripe" paintings run many thin bands
-   * of flat, confident color close together with only a thin sliver of bare
-   * canvas between them -- narrower than the stripes themselves, not the
-   * wide gaps Rothko's fields get. */
+  /** Louis: canvas divided into several vertical stripes, each its own
+   * persistent poured color; pitch register selects which stripe a note
+   * feeds, and the cursor lands anywhere along that stripe's full height.
+   * A clearly visible gap of bare canvas separates each stripe -- real
+   * negative space, not just a hairline crack, so each poured color reads
+   * as its own distinct band with a soft (not hard-ruled) edge. */
   private ensureLouisStripes() {
     if (this.louisStripes.length) return;
     const width = this.logicalWidth;
     const count = 9;
     const margin = 0.08;
-    const gap = 0.012;
+    const gap = 0.025;
     const usable = 1 - margin * 2 - gap * (count - 1);
     const span = usable / count;
     const bounds: Array<[number, number]> = [];
@@ -682,12 +681,12 @@ export class PaintEngine {
 
   /** Louis's poured "Veils" read as soft, translucent washes rather than
    * flat confident pigment -- thinned acrylic soaking into raw, unprimed
-   * canvas and spreading wet-into-wet, so a stripe's color never stops in
-   * a clean line at its own boundary. Each mark is wider than the
-   * stripe's own lane and faded at both edges via a gradient, so it pools
-   * across the gap and visibly bleeds into whichever stripe sits next
-   * door -- overlapping washes from neighboring stripes optically blend
-   * into a genuinely new in-between color, the way real watercolor does. */
+   * canvas, its edges fading via a gradient rather than stopping in a
+   * crisp line. Each mark stays close to its own stripe's lane (see the
+   * width below), so the gap reserved between stripes (see
+   * ensureLouisStripes) reads as real negative space -- a soft, feathered
+   * edge on each side rather than colors bleeding together or a hard
+   * rule line. */
   private renderLouisStripe(note: NoteEvent, stripe: LouisStripe, rawColor: NoteColor) {
     if (stripe.hue === null) {
       stripe.hue = this.pickDistinctStripeHue(stripe, rawColor.hue);
@@ -703,8 +702,8 @@ export class PaintEngine {
     const light = clamp(rawColor.lightness + (this.rand() - 0.5) * 6, 34, 58);
 
     const stripeWidth = stripe.xEnd - stripe.xStart;
-    const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.2;
-    const w = stripeWidth * (1.4 + this.rand() * 1.1);
+    const cx = stripe.xStart + stripeWidth / 2 + (this.rand() - 0.5) * stripeWidth * 0.15;
+    const w = stripeWidth * (0.75 + this.rand() * 0.35);
     const h = this.logicalHeight * (0.14 + this.rand() * 0.18 + note.amplitude * 0.06);
     const peakAlpha = 0.18 + note.amplitude * 0.2;
 
@@ -722,20 +721,6 @@ export class PaintEngine {
     this.ctx.filter = "blur(8px)";
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(left, this.cursor.y - h / 2, w, h);
-    this.ctx.restore();
-
-    // A very thin white line at each of this stripe's true edges, crisp
-    // (no blur) so it stays visible cutting through the bleed -- redrawn
-    // on every mark rather than once up front, so later, more opaque
-    // washes never bury it. Gives the colors a bit of graphic separation
-    // without losing the soft blended transition on either side of it.
-    const sepWidth = 1.4;
-    const sepAlpha = 0.5 + this.rand() * 0.3;
-    this.ctx.save();
-    this.ctx.filter = "none";
-    this.ctx.fillStyle = `rgba(255, 255, 255, ${sepAlpha.toFixed(3)})`;
-    this.ctx.fillRect(stripe.xStart - sepWidth / 2, this.cursor.y - h / 2, sepWidth, h);
-    this.ctx.fillRect(stripe.xEnd - sepWidth / 2, this.cursor.y - h / 2, sepWidth, h);
     this.ctx.restore();
   }
 
