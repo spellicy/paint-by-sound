@@ -666,7 +666,12 @@ export class PaintEngine {
     let index = Math.floor(count / 2);
     if (frequency > 0) {
       const midi = 69 + 12 * Math.log2(frequency / 440);
-      const norm = clamp((midi - 40) / 60, 0, 1);
+      // A narrower, more realistic vocal/instrumental range than the
+      // midi-40-to-100 span used elsewhere -- that ceiling sits well above
+      // where most melodic content actually reaches, so the rightmost one
+      // or two stripes almost never got selected and the piece never
+      // painted all the way to the right edge.
+      const norm = clamp((midi - 42) / 46, 0, 1);
       index = clamp(Math.floor(norm * count), 0, count - 1);
     }
     const stripe = this.louisStripes[index];
@@ -717,6 +722,20 @@ export class PaintEngine {
     this.ctx.filter = "blur(8px)";
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(left, this.cursor.y - h / 2, w, h);
+    this.ctx.restore();
+
+    // A very thin white line at each of this stripe's true edges, crisp
+    // (no blur) so it stays visible cutting through the bleed -- redrawn
+    // on every mark rather than once up front, so later, more opaque
+    // washes never bury it. Gives the colors a bit of graphic separation
+    // without losing the soft blended transition on either side of it.
+    const sepWidth = 1.4;
+    const sepAlpha = 0.5 + this.rand() * 0.3;
+    this.ctx.save();
+    this.ctx.filter = "none";
+    this.ctx.fillStyle = `rgba(255, 255, 255, ${sepAlpha.toFixed(3)})`;
+    this.ctx.fillRect(stripe.xStart - sepWidth / 2, this.cursor.y - h / 2, sepWidth, h);
+    this.ctx.fillRect(stripe.xEnd - sepWidth / 2, this.cursor.y - h / 2, sepWidth, h);
     this.ctx.restore();
   }
 

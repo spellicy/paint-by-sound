@@ -23,10 +23,10 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // Length varies well beyond what amplitude alone would give -- a short
   // stub or a long trailing thread, not a fairly narrow band around one
   // typical size every time.
-  const reachJitter = rand() < 0.15 ? 0.3 + rand() * 0.4 : 0.7 + rand() * 1.7;
-  const reach = (12 + note.amplitude * 70) * reachJitter;
+  const reachJitter = rand() < 0.15 ? 0.3 + rand() * 0.4 : 0.8 + rand() * 2.4;
+  const reach = (20 + note.amplitude * 130) * reachJitter;
   const segments = 2 + Math.floor(rand() * 3);
-  const baseWidth = 0.5 + note.amplitude * 1.8;
+  const baseWidth = 1.8 + note.amplitude * 7;
   // A longer stroke (more segments) needs to visibly taper along its own
   // length, not just vary at random from one note's mark to the next --
   // real flung paint runs thick where the stick made contact and thins as
@@ -94,10 +94,10 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // Occasionally the stick dumped extra paint mid-gesture -- a small
   // pooled blob (an irregular, lobed splotch, not a perfect circle)
   // rather than a continuous line.
-  if (rand() < 0.22) {
+  if (rand() < 0.3) {
     const bx = cursor.x + (px - cursor.x) * rand();
     const by = cursor.y + (py - cursor.y) * rand();
-    const br = 1.5 + rand() * (2 + note.amplitude * 5);
+    const br = 3 + rand() * (6 + note.amplitude * 16);
     const lobes = 5 + Math.floor(rand() * 3);
     ctx.fillStyle = color.rgba(0.45 + rand() * 0.3);
     ctx.beginPath();
@@ -122,7 +122,7 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
     : isBigSpray
       ? 4 + Math.floor(rand() * 5)
       : 1;
-  const spreadRadius = isBigSpray ? 14 + note.amplitude * 30 : 10;
+  const spreadRadius = isBigSpray ? 22 + note.amplitude * 55 : 16;
   ctx.fillStyle = color.rgba(0.5);
   for (let i = 0; i < flickCount; i++) {
     const t = rand();
@@ -130,7 +130,7 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
     const fy = cursor.y + (py - cursor.y) * t + (rand() - 0.5) * spreadRadius;
     // rand()*rand() skews toward small drops with an occasional larger
     // splat, the way real spatter distributes -- mostly fine, rarely fat.
-    const r = 0.4 + rand() * rand() * (isBigSpray ? 3.5 : 1.2) * (0.5 + note.amplitude);
+    const r = 0.6 + rand() * rand() * (isBigSpray ? 7 : 2.4) * (0.5 + note.amplitude);
     ctx.beginPath();
     ctx.arc(fx, fy, r, 0, TAU);
     ctx.fill();
@@ -222,9 +222,9 @@ const schiele: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // never fills the shape evenly: a dense band hugs the line and thins
   // to a veil moving inward, most of the canvas left bare -- his sparse
   // backgrounds push all the pressure onto the contour itself.
-  const len = 10 + note.amplitude * 46;
+  const len = 32 + note.amplitude * 100;
   const segments = 3 + Math.floor(rand() * 3);
-  const inkWidth = 0.8 + note.amplitude * 1.4;
+  const inkWidth = 1.8 + note.amplitude * 3.4;
 
   ctx.save();
   ctx.translate(cursor.x, cursor.y);

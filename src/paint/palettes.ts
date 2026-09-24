@@ -40,14 +40,15 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
   },
   pollock: {
     // Hue tracks the note's own pitch almost freely (low huePull, anchors
-    // spread clear around the wheel). Saturation/lightness sit at a
-    // moderate baseline here -- the dramatic swing from near-black/muted
-    // to fully vivid now comes mainly from the major/minor key (see
-    // stylizeColor), not from every note maxing out the range on its own.
+    // spread clear around the wheel). Raised the saturation/lightness
+    // ceiling well past the other post-Rothko painters' moderate baseline
+    // -- Pollock's flung paint reads as loud and aggressive by nature, not
+    // restrained, so he leans more vivid by default even before the
+    // major/minor key swing (see stylizeColor) pushes it further.
     signatureHues: [0, 45, 90, 150, 200, 260, 300],
     huePull: 0.18,
-    saturation: [15, 55],
-    lightness: [10, 50],
+    saturation: [25, 75],
+    lightness: [12, 62],
   },
   dekooning: {
     // Flesh pink, cadmium red and yellow -- tightly clustered warm
