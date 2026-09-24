@@ -25,7 +25,7 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   // typical size every time.
   const reachJitter = rand() < 0.15 ? 0.3 + rand() * 0.4 : 0.8 + rand() * 2.4;
   const reach = (20 + note.amplitude * 130) * reachJitter;
-  const segments = 2 + Math.floor(rand() * 3);
+  const segments = 3 + Math.floor(rand() * 4);
   const baseWidth = 1.8 + note.amplitude * 7;
   // A longer stroke (more segments) needs to visibly taper along its own
   // length, not just vary at random from one note's mark to the next --
@@ -44,18 +44,20 @@ const pollock: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  // Lay down the raw waypoints of a whip-like walk first, heading drifting
-  // smoothly with only occasional sharper flicks -- then render them as one
-  // continuous curve (below), rather than each segment being its own
-  // independently-bowed arc. Bowing every segment the same fixed amount
-  // relative to its own heading, with no relation to the segment before or
-  // after it, is what made the line read as a chain of separate crescents
-  // meeting at corners instead of one fluid stroke.
+  // Lay down the raw waypoints of a whip-like walk first, then render them
+  // as one continuous curve (below), rather than each segment being its
+  // own independently-bowed arc. Heading changes are large and frequent
+  // enough that the walk zigzags and can double back on itself, rather
+  // than drifting gently in one direction -- a gentle drift over only a
+  // handful of waypoints reads as a single smooth arch, not the erratic
+  // whip-crack of real flung paint. Continuity between segments (below)
+  // keeps this fluid rather than a chain of jagged corners even with
+  // sharp turns here.
   const pts: { x: number; y: number }[] = [{ x: cursor.x, y: cursor.y }];
   let heading = rand() * TAU;
   for (let i = 0; i < segments; i++) {
-    heading += (rand() - 0.5) * (rand() < 0.15 ? 2.0 : 0.85);
-    const segLen = (reach / segments) * (0.6 + rand() * 0.8);
+    heading += (rand() - 0.5) * (rand() < 0.3 ? 3.4 : 1.5);
+    const segLen = (reach / segments) * (0.5 + rand() * 1.0);
     const prev = pts[i];
     pts.push({ x: prev.x + Math.cos(heading) * segLen, y: prev.y + Math.sin(heading) * segLen });
   }
