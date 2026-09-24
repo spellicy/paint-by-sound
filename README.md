@@ -48,7 +48,7 @@ between notes (no snapping to fixed steps), plus a slow palette drift over
 the piece and per-stroke jitter, so the same note never paints quite the
 same way twice.
 
-### Nine painters, nine different techniques
+### Ten painters, ten different techniques
 
 Each style isn't just a different brush shape on a shared engine — it has
 its own **composition strategy** (how the simulated arm moves and how much
@@ -70,6 +70,7 @@ painting, and the painters who carried that lineage into minimalism:
 | Delaunay | **All-over** — concentric flat-color rings scattered across the canvas like his "Simultaneous Disks," largest ring first with each smaller one painted on top; sometimes only a half or a quarter of the disc appears, as if cropped by a neighboring shape | Full color-wheel spectrum in flat, high-contrast bands, punctuated by black and white/grey rings for structure — hard-edged, never blended |
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale washes drawn from a full twelve-hue wheel, one per pitch class, rather than just a few |
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
+| Miro | **Sparse** — a handful of isolated biomorphic signs across a mostly bare canvas: an irregular amoeba blob, a looping calligraphic squiggle, a flat dot, a radiating star, or a watchful eye, picked at random per mark | A small, flat alphabet of pure poster-paint color — cadmium red, chrome yellow, ultramarine blue, leaf green — snapped hard to those few anchors rather than drifting across the spectrum |
 
 ### Major and minor
 
@@ -99,8 +100,8 @@ are) and puts the engine into one of four phases:
   accent brush style different from the base one, for percussive emphasis.
 - **Composing** — the default per-note stroke behavior.
 
-Rothko, Schiele, Martin, and Marden paint continuously in their own technique
-regardless of phase (that's how those painters actually worked), with
+Rothko, Schiele, Martin, Marden, and Miro paint continuously in their own
+technique regardless of phase (that's how those painters actually worked), with
 loudness and onset density modulating intensity and size rather than
 switching modes.
 

@@ -131,6 +131,19 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [14, 38],
     lightness: [16, 42],
   },
+  miro: {
+    // A small, flat alphabet of pure poster-paint color -- cadmium red,
+    // chrome yellow, ultramarine blue, a leaf green -- snapped hard from
+    // whatever hue the note suggests rather than drifting continuously,
+    // the way his shapes read as a handful of solid colors, not a
+    // spectrum. Saturation/lightness sit high and flat like Delaunay's
+    // opaque discs (these are confident solid fills, not washes), with
+    // the black ink linework itself handled separately in the renderer.
+    signatureHues: [4, 48, 215, 130],
+    huePull: 0.85,
+    saturation: [55, 85],
+    lightness: [38, 58],
+  },
 };
 
 function hueDistanceSigned(from: number, to: number): number {

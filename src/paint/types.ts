@@ -10,7 +10,8 @@ export type PaintStyleId =
   | "kandinsky"
   | "delaunay"
   | "martin"
-  | "marden";
+  | "marden"
+  | "miro";
 
 export interface PaintStyleInfo {
   id: PaintStyleId;
@@ -64,13 +65,18 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     label: "Marden",
     blurb: "Sinuous line, color-field minimalism with loosely wandering hue.",
   },
+  {
+    id: "miro",
+    label: "Miro",
+    blurb: "Whimsical biomorphic signs -- blobs, stars, eyes -- on bare ground.",
+  },
 ];
 
 /** Style groups with fundamentally different composition strategies. */
 export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky", "delaunay"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
 export const FOCAL_STYLES: PaintStyleId[] = ["dekooning"];
-export const SPARSE_STYLES: PaintStyleId[] = ["schiele"];
+export const SPARSE_STYLES: PaintStyleId[] = ["schiele", "miro"];
 export const GRID_STYLES: PaintStyleId[] = ["martin"];
 export const FLOW_STYLES: PaintStyleId[] = ["marden"];
 /** Louis: parallel vertical color stripes, persistent across the piece --

@@ -430,6 +430,185 @@ const marden: StyleRenderer = ({ ctx, cursor, note, color, rand, heading }) => {
   ctx.restore();
 };
 
+const miro: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
+  // Miro's world is a small, recurring repertoire of signs -- a biomorphic
+  // amoeba blob, a looping calligraphic squiggle, a flat solid dot, a
+  // radiating star, a watchful eye -- scattered across mostly bare ground
+  // rather than any one continuous gesture. Each mark draws one sign from
+  // that repertoire, chosen at random, instead of always the same shape.
+  const scale = 0.55 + note.amplitude * 1.5;
+  const roll = rand();
+
+  ctx.save();
+  ctx.translate(cursor.x, cursor.y);
+  ctx.rotate(rand() * TAU);
+
+  if (roll < 0.3) {
+    miroBlob(ctx, scale, color.rgb, rand);
+  } else if (roll < 0.55) {
+    miroSquiggle(ctx, scale, rand);
+  } else if (roll < 0.75) {
+    miroDot(ctx, scale, color.rgb, rand);
+  } else if (roll < 0.88) {
+    miroStar(ctx, scale, rand);
+  } else {
+    miroEye(ctx, scale, rand);
+  }
+  ctx.restore();
+};
+
+function miroBlob(ctx: CanvasRenderingContext2D, s: number, fill: string, rand: () => number) {
+  // An irregular, lobed amoeba outline -- never a clean circle or ellipse
+  // -- built the same way as Pollock's pooled blob (jittered points on a
+  // ring, joined with quadratic curves) but smoother and larger, since
+  // this is a deliberate biomorphic sign rather than a paint pool.
+  const r = (9 + rand() * 20) * s;
+  const lobes = 6 + Math.floor(rand() * 4);
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < lobes; i++) {
+    const a = (i / lobes) * TAU;
+    const rr = r * (0.55 + rand() * 0.75);
+    pts.push({ x: Math.cos(a) * rr, y: Math.sin(a) * rr * (0.65 + rand() * 0.35) });
+  }
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const p0 = pts[i];
+    const p1 = pts[(i + 1) % pts.length];
+    const mx = (p0.x + p1.x) / 2;
+    const my = (p0.y + p1.y) / 2;
+    if (i === 0) ctx.moveTo(mx, my);
+    else ctx.quadraticCurveTo(p0.x, p0.y, mx, my);
+  }
+  ctx.closePath();
+
+  // Usually a flat, confident fill -- his signature poster-paint solidity
+  // -- sometimes just the ink outline, left open like a drawn glyph.
+  if (rand() < 0.75) {
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (rand() < 0.5) {
+      ctx.strokeStyle = "rgba(20, 18, 16, 0.85)";
+      ctx.lineWidth = 1.4 * s;
+      ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = "rgba(20, 18, 16, 0.85)";
+    ctx.lineWidth = 1.8 * s;
+    ctx.stroke();
+  }
+
+  // A small dot nested inside, echoing how his flat shapes often carry a
+  // tiny secondary mark -- a seed, a pupil, a satellite.
+  if (rand() < 0.3) {
+    ctx.beginPath();
+    ctx.arc((rand() - 0.5) * r * 0.5, (rand() - 0.5) * r * 0.5, (1.4 + rand() * 2) * s, 0, TAU);
+    ctx.fillStyle = "rgba(20, 18, 16, 0.9)";
+    ctx.fill();
+  }
+}
+
+function miroSquiggle(ctx: CanvasRenderingContext2D, s: number, rand: () => number) {
+  // A thin, meandering calligraphic line -- the hand-drawn connective
+  // tissue between the bigger signs -- built from sharp, frequent
+  // direction changes (like Schiele's contour) rather than one smooth
+  // curve, occasionally closing into a small loop at its tail.
+  const len = (26 + rand() * 50) * s;
+  const segments = 5 + Math.floor(rand() * 5);
+  ctx.strokeStyle = "rgba(20, 18, 16, 0.85)";
+  ctx.lineWidth = Math.max(0.8, (1 + rand() * 1.1) * s * 0.7);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  let x = -len / 2;
+  let y = 0;
+  ctx.moveTo(x, y);
+  let heading = 0;
+  let tail = { x, y };
+  for (let i = 0; i < segments; i++) {
+    heading += (rand() - 0.5) * 3.4;
+    const segLen = (len / segments) * (0.5 + rand());
+    const nx = x + Math.cos(heading) * segLen;
+    const ny = y + Math.sin(heading) * segLen;
+    const cx = x + Math.cos(heading - 0.7) * segLen * 0.5;
+    const cy = y + Math.sin(heading - 0.7) * segLen * 0.5;
+    ctx.quadraticCurveTo(cx, cy, nx, ny);
+    x = nx;
+    y = ny;
+    tail = { x, y };
+  }
+  ctx.stroke();
+
+  if (rand() < 0.4) {
+    const lr = (3 + rand() * 5) * s;
+    ctx.beginPath();
+    ctx.arc(tail.x, tail.y, lr, 0, TAU);
+    ctx.stroke();
+  }
+}
+
+function miroDot(ctx: CanvasRenderingContext2D, s: number, fill: string, rand: () => number) {
+  // A small flat disc -- the recurring "planet"/seed mark -- occasionally
+  // ringed with a thin outline set slightly outside it.
+  const r = (2.2 + rand() * 6) * s;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, TAU);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (rand() < 0.4) {
+    ctx.strokeStyle = "rgba(20, 18, 16, 0.7)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 2 * s, 0, TAU);
+    ctx.stroke();
+  }
+}
+
+function miroStar(ctx: CanvasRenderingContext2D, s: number, rand: () => number) {
+  // A small radiating burst of short strokes from a point -- the
+  // asterisk-like star that recurs throughout his skies.
+  const rays = 5 + Math.floor(rand() * 3);
+  const r = (5 + rand() * 8) * s;
+  ctx.strokeStyle = "rgba(20, 18, 16, 0.85)";
+  ctx.lineWidth = 1.3 * s;
+  ctx.lineCap = "round";
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * TAU + rand() * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.stroke();
+  }
+}
+
+function miroEye(ctx: CanvasRenderingContext2D, s: number, rand: () => number) {
+  // The recurring watchful eye -- an almond outline with a solid pupil
+  // and, sometimes, a couple of short lashes -- about as figurative as
+  // this otherwise abstract sign language gets.
+  const rx = (6 + rand() * 6) * s;
+  const ry = rx * (0.5 + rand() * 0.3);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, TAU);
+  ctx.strokeStyle = "rgba(20, 18, 16, 0.85)";
+  ctx.lineWidth = 1.5 * s;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, Math.min(rx, ry) * 0.42, 0, TAU);
+  ctx.fillStyle = "rgba(20, 18, 16, 0.9)";
+  ctx.fill();
+
+  if (rand() < 0.4) {
+    for (let i = -1; i <= 1; i++) {
+      const lx = i * rx * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(lx, -ry);
+      ctx.lineTo(lx + i * 2, -ry - 4 - rand() * 2);
+      ctx.strokeStyle = "rgba(20, 18, 16, 0.7)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+}
+
 const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   rothko,
   pollock,
@@ -440,6 +619,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   delaunay,
   martin,
   marden,
+  miro,
 };
 
 export function renderStroke(styleId: PaintStyleId, s: StrokeContext) {
