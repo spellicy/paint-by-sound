@@ -635,15 +635,17 @@ export class PaintEngine {
   /** Louis: canvas divided into several vertical stripes, each its own
    * persistent poured color; pitch register selects which stripe a note
    * feeds, and the cursor lands anywhere along that stripe's full height.
-   * A clearly visible gap of bare canvas separates each stripe -- real
-   * negative space, not just a hairline crack, so each poured color reads
-   * as its own distinct band with a soft (not hard-ruled) edge. */
+   * A visible gap of bare canvas separates each stripe -- real negative
+   * space, not just a hairline crack, so each poured color reads as its
+   * own distinct band with a soft (not hard-ruled) edge -- but narrow
+   * enough that the stripes still read as one continuous composition
+   * rather than isolated islands with too much dead space between them. */
   private ensureLouisStripes() {
     if (this.louisStripes.length) return;
     const width = this.logicalWidth;
     const count = 9;
     const margin = 0.08;
-    const gap = 0.025;
+    const gap = 0.015;
     const usable = 1 - margin * 2 - gap * (count - 1);
     const span = usable / count;
     const bounds: Array<[number, number]> = [];
