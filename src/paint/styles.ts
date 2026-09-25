@@ -314,14 +314,20 @@ const kandinsky: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
 };
 
 const delaunay: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // "Simultaneous Disks" / "Rythme": concentric flat-color rings, stepping
-  // through the spectrum ring to ring rather than blending or fading --
-  // Orphism's hard-edged, opaque color contrast, the opposite of
-  // Kandinsky's soft translucent overlaps. Occasionally only a half or a
-  // quarter of the disc is drawn, echoing how his discs read as cropped
-  // by neighboring shapes or the canvas edge. Drawn largest ring first,
-  // each smaller ring painted on top, so only an annular band of each
-  // larger ring stays visible.
+  // "Simultaneous Disks" / "Manege de cochons": concentric color rings,
+  // stepping through the spectrum ring to ring rather than blending --
+  // Orphism's confident color contrast. But the actual paintings read as
+  // hand-brushed, not vector art: every ring's edge carries a slight
+  // freehand wobble rather than a mechanically perfect circle, the
+  // outermost ring feathers softly into the canvas instead of stopping in
+  // a laser-crisp boundary, and the accent rings are a warm near-black or
+  // aged cream rather than pure digital black/white -- all of it toward a
+  // painterly, slightly worn 1920s canvas rather than a flat modern
+  // vector illustration. Occasionally only a half or a quarter of the
+  // disc is drawn, echoing how his discs read as cropped by neighboring
+  // shapes or the canvas edge. Drawn largest ring first, each smaller
+  // ring painted on top, so only an annular band of each larger ring
+  // stays visible.
   //
   // Size varies independently of amplitude, not just scaled by it -- his
   // discs range from small satellite circles to canvas-filling targets
@@ -351,28 +357,56 @@ const delaunay: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
     endAngle = rot + Math.PI / 2;
   }
 
+  // A gentle, irregular wobble traced through every ring's boundary --
+  // three or four soft bumps around the circumference, not a perfect
+  // radius -- so the whole shape reads as brushed freehand rather than
+  // drawn with a compass.
+  const wobblePhase = rand() * TAU;
+  const wobbleLobes = 3 + Math.floor(rand() * 2);
+  const wobbleAmt = 0.035 + rand() * 0.05;
+  const wobblePath = (r: number, a0: number, a1: number) => {
+    ctx.moveTo(cursor.x, cursor.y);
+    const steps = Math.max(8, Math.ceil((32 * (a1 - a0)) / TAU));
+    for (let i = 0; i <= steps; i++) {
+      const a = a0 + (a1 - a0) * (i / steps);
+      const wob = 1 + Math.sin(a * wobbleLobes + wobblePhase) * wobbleAmt;
+      ctx.lineTo(cursor.x + Math.cos(a) * r * wob, cursor.y + Math.sin(a) * r * wob);
+    }
+  };
+
   ctx.save();
+  let outerFill = "";
   for (let i = rings; i >= 1; i--) {
     const r = ringStep * i;
     let fill: string;
     const achromaticRoll = rand();
-    if (achromaticRoll < 0.12) {
-      fill = "hsl(0, 0%, 8%)";
-    } else if (achromaticRoll < 0.2) {
-      fill = "hsl(0, 0%, 92%)";
+    if (achromaticRoll < 0.08) {
+      fill = "hsl(18, 38%, 12%)"; // warm ink, not pure digital black
+    } else if (achromaticRoll < 0.16) {
+      fill = "hsl(42, 32%, 88%)"; // aged cream, not pure digital white
     } else {
       const hue = (color.hue + i * hueStep + (rand() - 0.5) * 8 + 360) % 360;
-      const sat = clamp(color.saturation + 10, 55, 92);
-      const light = clamp(color.lightness + (i % 2 === 0 ? 6 : -6), 22, 62);
+      const sat = clamp(color.saturation, 42, 78);
+      const light = clamp(color.lightness + (i % 2 === 0 ? 5 : -5), 26, 56);
       fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
     }
+    if (i === rings) outerFill = fill;
     ctx.beginPath();
-    ctx.moveTo(cursor.x, cursor.y);
-    ctx.arc(cursor.x, cursor.y, Math.max(1, r), startAngle, endAngle);
+    wobblePath(Math.max(1, r), startAngle, endAngle);
     ctx.closePath();
     ctx.fillStyle = fill;
     ctx.fill();
   }
+
+  // The outermost color feathers softly outward instead of stopping in a
+  // crisp vector boundary -- a thin, translucent bloom bleeding into the
+  // bare canvas the way brushed paint actually settles.
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  wobblePath(Math.max(1, radius * 1.08), startAngle, endAngle);
+  ctx.closePath();
+  ctx.fillStyle = outerFill;
+  ctx.fill();
   ctx.restore();
 };
 
