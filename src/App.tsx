@@ -3,8 +3,6 @@ import { usePaintBySound } from "./hooks/usePaintBySound";
 import { Controls } from "./components/Controls";
 import { StatusBar } from "./components/StatusBar";
 import { ConceptPanel } from "./components/ConceptPanel";
-import { InspirationPanel } from "./components/InspirationPanel";
-import { SpotifyPicker } from "./components/SpotifyPicker";
 import { Gallery } from "./components/Gallery";
 import { loadGallery, removeFromGallery, type GalleryPiece } from "./gallery/storage";
 
@@ -26,11 +24,6 @@ export default function App() {
     stop,
     clearCanvas,
     saveCurrentToGallery,
-    inspirationTitle,
-    setInspirationTitle,
-    inspirationLyrics,
-    setInspirationLyrics,
-    themeInfluence,
   } = usePaintBySound(canvasRef);
 
   const [pieces, setPieces] = useState<GalleryPiece[]>([]);
@@ -80,13 +73,6 @@ export default function App() {
               {error}
             </p>
           )}
-          <InspirationPanel
-            title={inspirationTitle}
-            onTitleChange={setInspirationTitle}
-            lyrics={inspirationLyrics}
-            onLyricsChange={setInspirationLyrics}
-            theme={themeInfluence}
-          />
           <ConceptPanel />
         </div>
 
@@ -99,6 +85,7 @@ export default function App() {
               onPlayFile={playFile}
               onPrepareFileUpload={prepareFileUpload}
               onStartMic={startMic}
+              onSpotifyTrackSelected={pickSpotifyTrack}
               onStop={stop}
               onClear={clearCanvas}
               onSave={handleSave}
@@ -107,7 +94,6 @@ export default function App() {
               <p className="mt-3 text-xs font-medium text-emerald-400">Saved to gallery.</p>
             )}
           </div>
-          <SpotifyPicker onTrackSelected={pickSpotifyTrack} />
         </aside>
       </main>
 

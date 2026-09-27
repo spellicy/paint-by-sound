@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { PAINT_STYLES } from "../paint/types";
 import type { PaintStyleId } from "../paint/types";
 import type { SourceMode } from "../hooks/usePaintBySound";
+import { SpotifyPicker } from "./SpotifyPicker";
+import type { SpotifyTrack } from "../spotify/api";
 
 interface ControlsProps {
   styleId: PaintStyleId;
@@ -10,6 +12,7 @@ interface ControlsProps {
   onPlayFile: (file: File) => void;
   onPrepareFileUpload: () => void;
   onStartMic: () => void;
+  onSpotifyTrackSelected: (track: SpotifyTrack) => void;
   onStop: () => void;
   onClear: () => void;
   onSave: () => void;
@@ -22,6 +25,7 @@ export function Controls({
   onPlayFile,
   onPrepareFileUpload,
   onStartMic,
+  onSpotifyTrackSelected,
   onStop,
   onClear,
   onSave,
@@ -85,6 +89,7 @@ export function Controls({
           speaker, another device, or the room. Painting starts the moment
           it hears sound, no extra step.
         </p>
+        <SpotifyPicker onTrackSelected={onSpotifyTrackSelected} />
       </div>
 
       <div>

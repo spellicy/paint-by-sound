@@ -23,14 +23,16 @@ phone to listen to, or use **Upload a file** instead, which plays an
 MP3/WAV directly and works reliably on a single device with no microphone
 involved.
 
-A **Spotify** panel lets you search Spotify by name and start a track on
-whichever device already has Spotify open (phone, desktop app, smart
-speaker) via Spotify Connect, instead of finding and starting the track
-yourself in a separate app. It only ever picks and starts a track --
-Spotify's own playback is DRM-protected and exposes no raw audio to the
-page, so painting the result still means hitting **Listen live** afterward,
-same as any other external source. See `src/spotify/config.ts` for the
-one-time setup (a free Spotify Developer app) this needs before it works.
+All three ways of getting audio in live together in one **Sound source**
+card. Alongside Listen live and Upload a file, a **Spotify** option lets
+you search Spotify by name and start a track on whichever device already
+has Spotify open (phone, desktop app, smart speaker) via Spotify Connect,
+instead of finding and starting the track yourself in a separate app. It
+only ever picks and starts a track -- Spotify's own playback is
+DRM-protected and exposes no raw audio to the page, so painting the result
+still means hitting **Listen live** afterward, same as any other external
+source. See `src/spotify/config.ts` for the one-time setup (a free Spotify
+Developer app) this needs before it works.
 
 ## How it listens
 
@@ -115,36 +117,21 @@ their own technique regardless of phase (that's how those painters actually work
 loudness and onset density modulating intensity and size rather than
 switching modes.
 
-### Inspiration: title and lyrics
+### A dormant capability: title/lyrics-driven theme
 
-The **Inspiration** panel lets you name the piece (prefilled from the
-filename, freely editable) and optionally add key lyrics or mood words. A
-small local mood lexicon (`src/theme/lexicon.ts`) reads that text the way a
-painter might take a cue from a title before starting a canvas — words like
-*storm*, *midnight*, *sunshine*, or *ocean* nudge the palette's warmth,
-luminosity, and compositional turbulence, and offer a gentle (never forced)
-style suggestion. Everything runs locally against the curated lexicon; there's
-no server call, and even words outside the lexicon still shift the palette via
-a deterministic hash of the text, so every title leaves *some* mark on the
-piece (`src/theme/themeAnalyzer.ts`).
-
-Naming an actual subject or place — *seaside*, *mountains*, *a city
-skyline*, *starry night* — goes a step further: a separate curated lexicon
-(`src/theme/subjects.ts`) reads it into a handful of abstract visual
-primitives (a horizon line, a ridge of peaks, a stand of verticals, a
-sun/moon disc, a spiral...) and the paint engine blocks those in early in
-the piece, and keeps quietly nudging the composition back toward them for
-the rest of it, in the *current painter's own hand* — the same "seaside"
-horizon comes out as a Rothko color-field band, a length of Marden's
-flowing line, or a scatter of Schiele's isolated contours, never as separate
-representational drawing code (`PaintEngine.paintMotifUnderlay`,
-`src/paint/motifs.ts`). It's a bias, not a template: the music-driven
-painting in `paintNote` keeps
-running exactly as before, layered on top. The all-over family's (Pollock,
-Kandinsky) technique explicitly has no fixed subject (that's the whole
-point of all-over composition), so it opts out of shape bias entirely and
-only picks up the subject's palette lean, the same as an untitled piece
-would.
+An earlier version had an **Inspiration** panel where you could name the
+piece and add key lyrics or mood words, which nudged the palette's warmth,
+luminosity, and compositional turbulence, and could block in an abstract
+subject shape (a horizon, a ridge of peaks, a spiral...) that the current
+painter kept nudging the composition back toward. It was removed from the
+UI — a typed title or a filename rarely carried enough signal to be worth
+the extra input step — but the machinery it drove is still very much
+present and wired up: `PaintEngine.setTheme`, the mood/subject lexicons
+(`src/theme/lexicon.ts`, `src/theme/subjects.ts`), `themeAnalyzer.ts`, and
+`paint/motifs.ts` are all intact, just permanently fed the neutral default
+now that nothing ever calls `setTheme` with real text. Reviving this would
+mean re-adding a caller (a title field, a track's actual metadata, lyrics
+fetched from somewhere) rather than rebuilding any of the analysis itself.
 
 Finished paintings can be saved to an in-browser **exhibit catalog**
 (`IndexedDB`, holding up to 10 pieces), each tagged with track name, style,
@@ -192,7 +179,7 @@ src/
   spotify/auth.ts         OAuth login redirect, token exchange, refresh, storage
   spotify/api.ts          track search + start-playback-on-active-device
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
-  components/             Controls, StatusBar, ConceptPanel, InspirationPanel, SpotifyPicker, Gallery
+  components/             Controls (incl. SpotifyPicker), StatusBar, ConceptPanel, Gallery
 ```
 
 ## Notes & limitations
