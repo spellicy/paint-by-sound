@@ -23,6 +23,15 @@ phone to listen to, or use **Upload a file** instead, which plays an
 MP3/WAV directly and works reliably on a single device with no microphone
 involved.
 
+A **Spotify** panel lets you search Spotify by name and start a track on
+whichever device already has Spotify open (phone, desktop app, smart
+speaker) via Spotify Connect, instead of finding and starting the track
+yourself in a separate app. It only ever picks and starts a track --
+Spotify's own playback is DRM-protected and exposes no raw audio to the
+page, so painting the result still means hitting **Listen live** afterward,
+same as any other external source. See `src/spotify/config.ts` for the
+one-time setup (a free Spotify Developer app) this needs before it works.
+
 ## How it listens
 
 Everything runs client-side on the Web Audio API:
@@ -178,8 +187,12 @@ src/
   paint/motifs.ts         subject primitive -> canvas anchor points
   gallery/storage.ts      IndexedDB-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
+  spotify/config.ts       Client ID / redirect URI / scopes -- one-time setup lives here
+  spotify/pkce.ts         PKCE code-verifier/challenge generation
+  spotify/auth.ts         OAuth login redirect, token exchange, refresh, storage
+  spotify/api.ts          track search + start-playback-on-active-device
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
-  components/             Controls, StatusBar, ConceptPanel, InspirationPanel, Gallery
+  components/             Controls, StatusBar, ConceptPanel, InspirationPanel, SpotifyPicker, Gallery
 ```
 
 ## Notes & limitations
@@ -187,8 +200,16 @@ src/
 - Pitch detection assumes monophonic-ish material (a solo, a lead line, a
   vocal); dense polyphonic mixes will still paint, just less "in tune" with
   any single note.
-- Everything is local to the browser — no backend, no accounts, no audio
-  ever leaves the machine it's played on.
+- Everything is local to the browser — no backend, no audio ever leaves the
+  machine it's played on. Connecting Spotify is the one opt-in exception: it
+  talks to Spotify's own API directly from the browser (OAuth via
+  Authorization Code + PKCE, no server or client secret involved) purely to
+  search tracks and start playback — never to read or analyze audio.
+- The Spotify panel needs a Spotify Premium account (Spotify's playback-
+  control API is Premium-only) and an already-active Spotify session
+  somewhere (phone, desktop app, smart speaker) — it can't launch the app
+  from fully closed. It also needs a Spotify Developer app registered once
+  per deployment; see `src/spotify/config.ts`.
 - On iPhone, Safari pauses other apps' audio the moment a page activates the
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same
