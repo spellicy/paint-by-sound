@@ -4,6 +4,7 @@ import { Controls } from "./components/Controls";
 import { StatusBar } from "./components/StatusBar";
 import { ConceptPanel } from "./components/ConceptPanel";
 import { InspirationPanel } from "./components/InspirationPanel";
+import { SpotifyPicker } from "./components/SpotifyPicker";
 import { Gallery } from "./components/Gallery";
 import { loadGallery, removeFromGallery, type GalleryPiece } from "./gallery/storage";
 
@@ -21,6 +22,7 @@ export default function App() {
     playFile,
     prepareFileUpload,
     startMic,
+    pickSpotifyTrack,
     stop,
     clearCanvas,
     saveCurrentToGallery,
@@ -105,6 +107,7 @@ export default function App() {
               <p className="mt-3 text-xs font-medium text-emerald-400">Saved to gallery.</p>
             )}
           </div>
+          <SpotifyPicker onTrackSelected={pickSpotifyTrack} />
         </aside>
       </main>
 

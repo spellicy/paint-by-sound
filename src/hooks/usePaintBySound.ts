@@ -6,6 +6,8 @@ import { PaintEngine } from "../paint/PaintEngine";
 import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
 import { analyzeTheme, type ThemeInfluence } from "../theme/themeAnalyzer";
+import { completeLoginIfRedirected } from "../spotify/auth";
+import type { SpotifyTrack } from "../spotify/api";
 
 export type SourceMode = "idle" | "file" | "mic";
 
@@ -54,6 +56,14 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
   useEffect(() => {
     engineRef.current?.setTheme(themeInfluence);
   }, [themeInfluence]);
+
+  // Picks the OAuth flow back up if Spotify just redirected here with
+  // `?code=...` -- a no-op on any other page load. Runs once regardless of
+  // whether Spotify is configured; `completeLoginIfRedirected` itself is a
+  // no-op when there's no `code` in the URL.
+  useEffect(() => {
+    void completeLoginIfRedirected();
+  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -160,6 +170,20 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     }
   }, [ensureAnalyzer]);
 
+  /** A track picked (and actually started playing, on the user's own
+   * Spotify device) via the Spotify search panel. This never touches the
+   * analyzer or sourceMode -- Spotify audio plays outside this page
+   * entirely, so the user still hits "Listen live" to paint it, exactly as
+   * they would for any other external source. This just fills in the track
+   * name / inspiration title the way an uploaded file's filename does. */
+  const pickSpotifyTrack = useCallback((track: SpotifyTrack) => {
+    const name = `${track.name} — ${track.artists.join(", ")}`;
+    setTrackName(name);
+    if (!inspirationTitleRef.current.trim()) {
+      setInspirationTitle(track.name);
+    }
+  }, []);
+
   const clearCanvas = useCallback(() => {
     engineRef.current?.clear();
   }, []);
@@ -195,6 +219,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     playFile,
     prepareFileUpload,
     startMic,
+    pickSpotifyTrack,
     stop,
     clearCanvas,
     saveCurrentToGallery,
