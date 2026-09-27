@@ -11,6 +11,7 @@ interface SpotifyPlayerInstance {
   disconnect(): void;
   activateElement(): Promise<void>;
   resume(): Promise<void>;
+  pause(): Promise<void>;
   addListener(event: "ready" | "not_ready", cb: (data: { device_id: string }) => void): void;
   addListener(
     event: "initialization_error" | "authentication_error" | "account_error" | "playback_error",
@@ -148,4 +149,12 @@ export function activatePlaybackElement(): void {
   if (!playerInstance) return;
   void playerInstance.activateElement();
   void playerInstance.resume();
+}
+
+/** Pauses Spotify on the in-page device, if one exists and is playing --
+ * a safe no-op when Spotify was never connected. Hitting "Stop" only ever
+ * stopped this app's own mic/file capture; it left a track started via the
+ * embedded player running forever with no way to silence it from here. */
+export function pauseEmbeddedPlayback(): void {
+  void playerInstance?.pause();
 }

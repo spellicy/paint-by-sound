@@ -7,6 +7,7 @@ import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
 import { completeLoginIfRedirected } from "../spotify/auth";
 import type { SpotifyTrack } from "../spotify/api";
+import { pauseEmbeddedPlayback } from "../spotify/player";
 
 export type SourceMode = "idle" | "file" | "mic";
 
@@ -103,6 +104,11 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     unsubRef.current?.();
     unsubRef.current = null;
     setSourceMode("idle");
+    // A track started via the embedded Spotify player plays outside this
+    // app's own audio pipeline entirely, so stopping analysis above never
+    // touched it -- Stop left Spotify running forever with no way to
+    // silence it from here. A safe no-op if Spotify was never connected.
+    pauseEmbeddedPlayback();
   }, []);
 
   const playFile = useCallback(
