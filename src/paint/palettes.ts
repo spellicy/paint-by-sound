@@ -144,6 +144,17 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [55, 85],
     lightness: [38, 58],
   },
+  albers: {
+    // The hundreds of "Homage to the Square" studies range across nearly
+    // every family he tried, but lean toward warm, earthy, often muted
+    // tones -- ochre, brick, rust, olive -- chosen for how neighboring
+    // squares visually push and pull on each other rather than for raw
+    // brightness, so saturation stays well short of a vivid poster color.
+    signatureHues: [25, 45, 15, 355, 60, 200],
+    huePull: 0.5,
+    saturation: [28, 58],
+    lightness: [26, 56],
+  },
 };
 
 function hueDistanceSigned(from: number, to: number): number {

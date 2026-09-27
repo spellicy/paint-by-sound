@@ -11,7 +11,8 @@ export type PaintStyleId =
   | "delaunay"
   | "martin"
   | "marden"
-  | "miro";
+  | "miro"
+  | "albers";
 
 export interface PaintStyleInfo {
   id: PaintStyleId;
@@ -70,10 +71,15 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     label: "Miro",
     blurb: "Whimsical biomorphic signs -- blobs, stars, eyes -- on bare ground.",
   },
+  {
+    id: "albers",
+    label: "Albers",
+    blurb: "Nested flat-color squares in an asymmetric optical niche.",
+  },
 ];
 
 /** Style groups with fundamentally different composition strategies. */
-export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky", "delaunay"];
+export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky", "delaunay", "albers"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
 export const FOCAL_STYLES: PaintStyleId[] = ["dekooning"];
 export const SPARSE_STYLES: PaintStyleId[] = ["schiele", "miro"];
