@@ -74,12 +74,12 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
   {
     id: "albers",
     label: "Albers",
-    blurb: "Nested flat-color squares in an asymmetric optical niche.",
+    blurb: "A persistent 4x4 grid of nested-square studies, tiled like a salon hang.",
   },
 ];
 
 /** Style groups with fundamentally different composition strategies. */
-export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky", "delaunay", "albers"];
+export const ALL_OVER_STYLES: PaintStyleId[] = ["pollock", "kandinsky", "delaunay"];
 export const FIELD_STYLES: PaintStyleId[] = ["rothko"];
 export const FOCAL_STYLES: PaintStyleId[] = ["dekooning"];
 export const SPARSE_STYLES: PaintStyleId[] = ["schiele", "miro"];
@@ -89,6 +89,13 @@ export const FLOW_STYLES: PaintStyleId[] = ["marden"];
  * structurally similar to Rothko's horizontal fields (see FIELD_STYLES) but
  * a distinct family since the geometry, palette, and edge technique differ. */
 export const STRIPE_STYLES: PaintStyleId[] = ["louis"];
+/** Albers: a persistent 4x4 grid of 16 cells tiling the whole canvas, each
+ * its own "Homage to the Square" study -- pitch register selects which
+ * cell a note belongs to, and that cell's nested squares get repainted
+ * (not just added to) on every hit, in a persistent color family that only
+ * occasionally shifts, echoing how Rothko's bands and Louis's stripes hold
+ * a color across many hits rather than reshuffling on every note. */
+export const MOSAIC_STYLES: PaintStyleId[] = ["albers"];
 
 /** Simulated position of the robotic arm's brush head on the canvas. */
 export interface ArmCursor {
