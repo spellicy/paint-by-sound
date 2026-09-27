@@ -68,8 +68,19 @@ let playerInstance: SpotifyPlayerInstance | null = null;
  * device. Requires Spotify Premium -- the SDK reports that as
  * `account_error` rather than failing silently. Safe to call repeatedly;
  * a second call while already connecting/connected is a no-op, so callers
- * don't need to track whether they've already initialized it. */
-export function ensureEmbeddedPlayer(onStatus: (status: PlayerStatus) => void): void {
+ * don't need to track whether they've already initialized it.
+ *
+ * `onPlaybackError` is separate from `onStatus` on purpose: a
+ * `playback_error` (buffering hiccup, the Safari autoplay-lock case, etc.)
+ * is a per-attempt failure, not a sign the device itself dropped -- it
+ * stays "ready" underneath. Folding it into the same persistent status as
+ * connecting/ready/fatal-error left the UI stuck showing a stale error
+ * forever after a *later* play attempt actually succeeded, since nothing
+ * else ever fires to move it back off "error". */
+export function ensureEmbeddedPlayer(
+  onStatus: (status: PlayerStatus) => void,
+  onPlaybackError: (message: string) => void,
+): void {
   if (playerInstance) return;
   onStatus({ state: "connecting" });
   void loadSdk()
@@ -105,7 +116,7 @@ export function ensureEmbeddedPlayer(onStatus: (status: PlayerStatus) => void): 
         onStatus({ state: "error", message: "The in-page player needs Spotify Premium." });
       });
       player.addListener("playback_error", ({ message }) => {
-        onStatus({ state: "error", message: `Playback error: ${message}` });
+        onPlaybackError(message || "Playback error.");
       });
 
       void player.connect();

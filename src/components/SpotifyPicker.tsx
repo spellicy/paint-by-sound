@@ -16,7 +16,7 @@ interface SpotifyPickerProps {
   onTrackSelected: (track: SpotifyTrack) => void;
 }
 
-type PlayState = { trackId: string; message: string; ok: boolean } | null;
+type PlayState = { message: string; ok: boolean } | null;
 
 /** Lives inside the same "Sound source" card as Listen live / Upload a
  * file -- all three ways of getting audio into the analyzer belong in one
@@ -37,7 +37,12 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   // a search finishes and the user picks a track.
   useEffect(() => {
     if (!connected) return;
-    ensureEmbeddedPlayer(setPlayerStatus);
+    // A playback_error is a per-attempt failure (a buffering hiccup, the
+    // Safari autoplay-lock case), not a sign the device dropped -- routed
+    // into playState (the same per-click feedback channel Play already
+    // uses) rather than the persistent playerStatus, so it doesn't get
+    // stuck showing a stale error after a later attempt actually succeeds.
+    ensureEmbeddedPlayer(setPlayerStatus, (message) => setPlayState({ ok: false, message }));
   }, [connected]);
 
   useEffect(() => {
@@ -103,7 +108,6 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
     setPlayState(null);
     if (playerStatus.state !== "ready") {
       setPlayState({
-        trackId: track.id,
         ok: false,
         message: "Still connecting the in-page player -- try again in a moment.",
       });
@@ -111,10 +115,10 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
     }
     const result = await playTrackOnActiveDevice(track.uri, playerStatus.deviceId);
     if (result.ok) {
-      setPlayState({ trackId: track.id, ok: true, message: "Playing -- hit Listen live to paint it." });
+      setPlayState({ ok: true, message: "Playing -- hit Listen live to paint it." });
       onTrackSelected(track);
     } else {
-      setPlayState({ trackId: track.id, ok: false, message: result.reason });
+      setPlayState({ ok: false, message: result.reason });
     }
   };
 
