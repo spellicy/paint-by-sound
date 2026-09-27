@@ -21,11 +21,16 @@ export const SPOTIFY_REDIRECT_URI = `${window.location.origin}${import.meta.env.
 
 /**
  * `user-read-playback-state` to find an active device, `user-modify-
- * playback-state` to start a track on it. Deliberately not requesting
- * anything broader (no private-data scopes) -- Phase 1 only ever picks a
- * track and hands playback to the user's own Spotify app.
+ * playback-state` to start a track on it. `streaming` plus `user-read-
+ * email`/`user-read-private` are Spotify's own documented requirement for
+ * the Web Playback SDK (spotify/player.ts) -- the in-page player this app
+ * uses so starting a track never needs an already-active Spotify session
+ * somewhere else. A token issued before `streaming` was added here won't
+ * carry it, so anyone who connected under the old scope list needs to
+ * disconnect and reconnect once to pick it up.
  */
-export const SPOTIFY_SCOPES = "user-read-playback-state user-modify-playback-state";
+export const SPOTIFY_SCOPES =
+  "user-read-playback-state user-modify-playback-state streaming user-read-email user-read-private";
 
 export function isSpotifyConfigured(): boolean {
   return SPOTIFY_CLIENT_ID !== "REPLACE_WITH_YOUR_SPOTIFY_CLIENT_ID" && SPOTIFY_CLIENT_ID.length > 0;
