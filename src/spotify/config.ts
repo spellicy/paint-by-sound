@@ -14,7 +14,7 @@
  *      support.
  *   3. Copy that app's Client ID and paste it below.
  */
-export const SPOTIFY_CLIENT_ID: string = "REPLACE_WITH_YOUR_SPOTIFY_CLIENT_ID";
+export const SPOTIFY_CLIENT_ID: string = "d8afedd34dfb4c4ca5b72386ce8d14e3";
 
 /** Always the deployed page's own root -- see the setup note above. */
 export const SPOTIFY_REDIRECT_URI = `${window.location.origin}${import.meta.env.BASE_URL}`;
