@@ -757,29 +757,40 @@ export class PaintEngine {
 
   /** Albers: canvas divided into a persistent 4x4 grid of 16 cells, echoing
    * how his hundreds of "Homage to the Square" studies get exhibited tiled
-   * together in a salon hang; pitch register selects which cell a note
-   * belongs to. A visible gutter of bare canvas separates every cell, the
-   * same real-negative-space treatment Louis's stripes use. */
+   * together in a salon hang -- edge to edge, with only a hairline of mat
+   * between them, not a wide gallery-style gutter. Cells are square (each
+   * one holds a square study) and sized in actual pixels rather than as
+   * independent width/height fractions -- on a canvas wider than it is
+   * tall, deriving each axis from the same 0..1 fraction would make every
+   * cell a landscape rectangle whose leftover side margins stack up into
+   * a much wider gap between columns than between rows. The whole square
+   * grid is centered on the canvas instead, so any letterboxing space
+   * lands outside the grid as one shared margin, not inside every cell.
+   * Pitch register selects which cell a note belongs to. */
   private ensureAlbersCells() {
     if (this.albersCells.length) return;
     const width = this.logicalWidth;
     const height = this.logicalHeight;
     const rows = 4;
     const cols = 4;
-    const margin = 0.03;
-    const gutter = 0.012;
-    const cellW = (1 - margin * 2 - gutter * (cols - 1)) / cols;
-    const cellH = (1 - margin * 2 - gutter * (rows - 1)) / rows;
+    const unit = Math.min(width, height);
+    const margin = unit * 0.006;
+    const gutter = unit * 0.004;
+    const cellSize = (Math.min(width, height) - margin * 2 - gutter * (cols - 1)) / cols;
+    const gridW = cellSize * cols + gutter * (cols - 1);
+    const gridH = cellSize * rows + gutter * (rows - 1);
+    const originX = (width - gridW) / 2;
+    const originY = (height - gridH) / 2;
     const cells: AlbersCell[] = [];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const xA = margin + col * (cellW + gutter);
-        const yA = margin + row * (cellH + gutter);
+        const x = originX + col * (cellSize + gutter);
+        const y = originY + row * (cellSize + gutter);
         cells.push({
-          xStart: width * xA,
-          xEnd: width * (xA + cellW),
-          yStart: height * yA,
-          yEnd: height * (yA + cellH),
+          xStart: x,
+          xEnd: x + cellSize,
+          yStart: y,
+          yEnd: y + cellSize,
           hue: null,
         });
       }
