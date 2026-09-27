@@ -201,6 +201,13 @@ src/
   per deployment; see `src/spotify/config.ts`. Reconnecting is required
   after any change to `SPOTIFY_SCOPES`, since a token issued under the old
   scope list won't carry a newly-added one.
+- Safari's autoplay policy blocks the Web Playback SDK's internal audio
+  element until a genuine click unlocks it — every Play click calls
+  Spotify's documented `activateElement()`/`resume()` workaround for this
+  (`spotify/player.ts`), but Safari specifically (mobile and desktop) has
+  a known, currently unresolved gap in Spotify's own SDK where that
+  doesn't always take effect on the first click. If Play reports a
+  playback error, try it again.
 - On iPhone, whether Listen live's microphone still pauses Spotify audio
   played through the in-page player (as opposed to a genuinely separate
   app, the documented case below) hasn't been verified — it may or may not

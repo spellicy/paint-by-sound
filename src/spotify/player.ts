@@ -9,6 +9,8 @@ import { getAccessToken } from "./auth";
 interface SpotifyPlayerInstance {
   connect(): Promise<boolean>;
   disconnect(): void;
+  activateElement(): Promise<void>;
+  resume(): Promise<void>;
   addListener(event: "ready" | "not_ready", cb: (data: { device_id: string }) => void): void;
   addListener(
     event: "initialization_error" | "authentication_error" | "account_error" | "playback_error",
@@ -120,4 +122,19 @@ export function ensureEmbeddedPlayer(onStatus: (status: PlayerStatus) => void): 
 export function disconnectEmbeddedPlayer(): void {
   playerInstance?.disconnect();
   playerInstance = null;
+}
+
+/** Mobile browsers (and, per Spotify's own SDK, Safari even on desktop)
+ * block the player's internal audio element until a genuine user gesture
+ * unlocks it -- a fetch()-triggered play command alone isn't enough, even
+ * though it originated from a click. Call this synchronously at the very
+ * top of that same click handler, before any `await`, so the browser still
+ * counts it as gesture-triggered. This is Spotify's own documented
+ * workaround; Safari specifically has a known, currently-unresolved gap in
+ * their SDK where even this doesn't always start audio on the first
+ * click -- so it helps, but isn't a guaranteed fix there. */
+export function activatePlaybackElement(): void {
+  if (!playerInstance) return;
+  void playerInstance.activateElement();
+  void playerInstance.resume();
 }

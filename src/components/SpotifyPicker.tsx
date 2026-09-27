@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { isSpotifyConfigured } from "../spotify/config";
 import { beginLogin, disconnect, isConnected } from "../spotify/auth";
 import { playTrackOnActiveDevice, searchTracks, type SpotifyTrack } from "../spotify/api";
-import { disconnectEmbeddedPlayer, ensureEmbeddedPlayer, type PlayerStatus } from "../spotify/player";
+import {
+  activatePlaybackElement,
+  disconnectEmbeddedPlayer,
+  ensureEmbeddedPlayer,
+  type PlayerStatus,
+} from "../spotify/player";
 
 interface SpotifyPickerProps {
   /** Called once a track has actually started playing on the user's active
@@ -90,6 +95,11 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   }
 
   const handlePlay = async (track: SpotifyTrack) => {
+    // Must run synchronously, before any await below, so mobile browsers
+    // (and Safari) still count this as triggered directly by the click --
+    // see spotify/player.ts. A fetch()-triggered play command alone doesn't
+    // satisfy their autoplay policy, even from a click's own handler.
+    activatePlaybackElement();
     setPlayState(null);
     if (playerStatus.state !== "ready") {
       setPlayState({
