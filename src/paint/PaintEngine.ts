@@ -11,6 +11,7 @@ import {
   FLOW_STYLES,
   FOCAL_STYLES,
   GRID_STYLES,
+  MOSAIC_STYLES,
   SPARSE_STYLES,
   STRIPE_STYLES,
   type ArmCursor,
@@ -97,6 +98,14 @@ interface LouisStripe {
   hue: number | null;
 }
 
+interface AlbersCell {
+  xStart: number;
+  xEnd: number;
+  yStart: number;
+  yEnd: number;
+  hue: number | null;
+}
+
 export interface PaintEngineOptions {
   canvas: HTMLCanvasElement;
   styleId: PaintStyleId;
@@ -118,6 +127,7 @@ export class PaintEngine {
   private gridX: number;
   private rothkoBands: RothkoBand[] = [];
   private louisStripes: LouisStripe[] = [];
+  private albersCells: AlbersCell[] = [];
   private rand: () => number;
   private phraseTracker = new PhraseTracker();
   private lastWashAt = -Infinity;
@@ -745,6 +755,137 @@ export class PaintEngine {
     return hue;
   }
 
+  /** Albers: canvas divided into a persistent 4x4 grid of 16 cells, echoing
+   * how his hundreds of "Homage to the Square" studies get exhibited tiled
+   * together in a salon hang; pitch register selects which cell a note
+   * belongs to. A visible gutter of bare canvas separates every cell, the
+   * same real-negative-space treatment Louis's stripes use. */
+  private ensureAlbersCells() {
+    if (this.albersCells.length) return;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
+    const rows = 4;
+    const cols = 4;
+    const margin = 0.03;
+    const gutter = 0.012;
+    const cellW = (1 - margin * 2 - gutter * (cols - 1)) / cols;
+    const cellH = (1 - margin * 2 - gutter * (rows - 1)) / rows;
+    const cells: AlbersCell[] = [];
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const xA = margin + col * (cellW + gutter);
+        const yA = margin + row * (cellH + gutter);
+        cells.push({
+          xStart: width * xA,
+          xEnd: width * (xA + cellW),
+          yStart: height * yA,
+          yEnd: height * (yA + cellH),
+          hue: null,
+        });
+      }
+    }
+    this.albersCells = cells;
+  }
+
+  private updateAlbersCursor(frequency: number): AlbersCell {
+    this.ensureAlbersCells();
+    const count = this.albersCells.length;
+    let index = Math.floor(count / 2);
+    if (frequency > 0) {
+      const midi = 69 + 12 * Math.log2(frequency / 440);
+      const norm = clamp((midi - 42) / 46, 0, 1);
+      // High pitch reads toward the grid's top-left (low index), low pitch
+      // toward the bottom-right, the same "high note -> high on the
+      // canvas" convention Rothko's bands use.
+      index = clamp(Math.floor((1 - norm) * count), 0, count - 1);
+    }
+    const cell = this.albersCells[index];
+    this.cursor.x = (cell.xStart + cell.xEnd) / 2;
+    this.cursor.y = (cell.yStart + cell.yEnd) / 2;
+    return cell;
+  }
+
+  /** Albers's "Homage to the Square": several flat, unmodulated color
+   * squares nested one inside the next, filling the largest square that
+   * fits this cell's own footprint -- no gradients, no soft or wobbly
+   * edges, the opposite of Delaunay's brushy hand-drawn wobble.
+   * Reproduces the series' signature asymmetric niche: the gap between
+   * nested squares is widest at the top, equal at the sides, and
+   * narrowest at the bottom. The outer square's footprint is fixed by the
+   * cell (never amplitude-scaled), so every hit fully repaints -- not just
+   * adds to -- whatever this cell showed before, in a persistent color
+   * family that only occasionally shifts (like Rothko's bands and Louis's
+   * stripes), rather than a fresh random hue on every single note. */
+  private renderAlbersCell(note: NoteEvent, cell: AlbersCell, rawColor: NoteColor) {
+    if (cell.hue === null) {
+      cell.hue = this.pickDistinctCellHue(cell, rawColor.hue);
+    } else if (this.rand() < 0.03) {
+      // Rarely, the cell shifts to a new dominant color -- a mood change.
+      cell.hue = this.pickDistinctCellHue(cell, rawColor.hue);
+    }
+    const baseHue = cell.hue;
+
+    const cx = (cell.xStart + cell.xEnd) / 2;
+    const cy = (cell.yStart + cell.yEnd) / 2;
+    const outerHalf = Math.min(cell.xEnd - cell.xStart, cell.yEnd - cell.yStart) / 2;
+
+    const layers = 3 + Math.floor(this.rand() * 2); // 3-4 nested squares
+    const shrink = 0.6 + this.rand() * 0.1;
+    const hueStep = 16 + this.rand() * 20;
+    // A rare jarring accent breaks the otherwise-related color stepping --
+    // one unrelated, contrasting hue right at the center, echoing the
+    // surprising bright cores that turn up in some of his studies -- more
+    // likely on a loud hit, in keeping with a study getting repainted with
+    // more conviction the harder the note lands.
+    const hasAccent = this.rand() < 0.1 + note.amplitude * 0.22;
+
+    this.ctx.save();
+    let halfW = outerHalf;
+    let sy = cy;
+    for (let i = 0; i < layers; i++) {
+      const isCenter = i === layers - 1;
+      let fill: string;
+      if (isCenter && hasAccent) {
+        const hue = (baseHue + 180 + (this.rand() - 0.5) * 40 + 360) % 360;
+        const sat = clamp(rawColor.saturation + 25, 45, 90);
+        const light = clamp(50 + (this.rand() - 0.5) * 20, 35, 65);
+        fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
+      } else {
+        const hue = (baseHue + i * hueStep + 360) % 360;
+        const sat = clamp(rawColor.saturation, 28, 58);
+        const light = clamp(rawColor.lightness + (i % 2 === 0 ? 6 : -6), 20, 64);
+        fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
+      }
+      this.ctx.fillStyle = fill;
+      this.ctx.fillRect(cx - halfW, sy - halfW, halfW * 2, halfW * 2);
+
+      const nextHalf = halfW * shrink;
+      const gap = halfW - nextHalf;
+      // Shift the next square's center down -- the top gap stays wide
+      // while the bottom gap shrinks toward it, the series' signature
+      // asymmetric niche (equal side margins fall out for free since x
+      // never shifts).
+      sy += gap * 0.34;
+      halfW = nextHalf;
+    }
+    this.ctx.restore();
+  }
+
+  /** Nudge a freshly-picked cell hue away from whatever the other Albers
+   * cells already show, so the 16-cell grid reads as genuinely distinct
+   * studies rather than the same color family repeating across the grid. */
+  private pickDistinctCellHue(cell: AlbersCell, candidate: number): number {
+    let hue = candidate;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const collides = this.albersCells.some(
+        (other) => other !== cell && other.hue !== null && Math.abs(hueDistanceSigned(hue, other.hue)) < 24,
+      );
+      if (!collides) break;
+      hue = (hue + 35 + this.rand() * 280) % 360;
+    }
+    return hue;
+  }
+
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
    * waves) gets blocked in once, early in the piece, in the current
    * painter's own hand -- the same points handed to Rothko become a color-
@@ -780,6 +921,8 @@ export class PaintEngine {
     if (isField) this.ensureRothkoBands();
     const isStripe = STRIPE_STYLES.includes(this.styleId);
     if (isStripe) this.ensureLouisStripes();
+    const isMosaic = MOSAIC_STYLES.includes(this.styleId);
+    if (isMosaic) this.ensureAlbersCells();
     const isFlow = FLOW_STYLES.includes(this.styleId);
 
     for (const mark of marks) {
@@ -804,6 +947,12 @@ export class PaintEngine {
           this.louisStripes.find((s) => mark.x >= s.xStart && mark.x <= s.xEnd) ??
           this.louisStripes[Math.floor(this.louisStripes.length / 2)];
         this.renderLouisStripe(note, stripe, color);
+      } else if (isMosaic) {
+        const cell =
+          this.albersCells.find(
+            (c) => mark.x >= c.xStart && mark.x <= c.xEnd && mark.y >= c.yStart && mark.y <= c.yEnd,
+          ) ?? this.albersCells[Math.floor(this.albersCells.length / 2)];
+        this.renderAlbersCell(note, cell, color);
       } else {
         renderStroke(this.styleId, {
           ctx: this.ctx,
@@ -824,6 +973,7 @@ export class PaintEngine {
     const isAllOver = ALL_OVER_STYLES.includes(this.styleId);
     const isField = FIELD_STYLES.includes(this.styleId);
     const isStripe = STRIPE_STYLES.includes(this.styleId);
+    const isMosaic = MOSAIC_STYLES.includes(this.styleId);
     const isGrid = GRID_STYLES.includes(this.styleId);
     const isFlow = FLOW_STYLES.includes(this.styleId);
     const isSparse = SPARSE_STYLES.includes(this.styleId);
@@ -833,6 +983,7 @@ export class PaintEngine {
 
     let rothkoBand: RothkoBand | null = null;
     let louisStripe: LouisStripe | null = null;
+    let albersCell: AlbersCell | null = null;
     if (!sparseSkip) {
       if (isAllOver) {
         this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
@@ -840,6 +991,8 @@ export class PaintEngine {
         rothkoBand = this.updateRothkoCursor(note.frequency);
       } else if (isStripe) {
         louisStripe = this.updateLouisCursor(note.frequency);
+      } else if (isMosaic) {
+        albersCell = this.updateAlbersCursor(note.frequency);
       } else if (isGrid) {
         this.updateGridCursor(note.amplitude);
       } else if (isFlow) {
@@ -879,6 +1032,8 @@ export class PaintEngine {
         this.renderRothkoField(note, rothkoBand, color);
       } else if (isStripe && louisStripe) {
         this.renderLouisStripe(note, louisStripe, color);
+      } else if (isMosaic && albersCell) {
+        this.renderAlbersCell(note, albersCell, color);
       } else if (isGrid || isFlow || isSparse) {
         // These families always paint in their own technique, regardless of
         // musical phase -- that's how those painters actually worked.

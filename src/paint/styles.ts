@@ -643,63 +643,12 @@ function miroEye(ctx: CanvasRenderingContext2D, s: number, rand: () => number) {
   }
 }
 
-const albers: StyleRenderer = ({ ctx, cursor, note, color, rand }) => {
-  // "Homage to the Square": several flat, unmodulated color squares
-  // nested one inside the next -- no gradients, no outlines, no soft or
-  // wobbly edges, the exact opposite of Delaunay's brushy hand-drawn
-  // wobble -- with the series' signature asymmetric niche: the gap
-  // between squares is widest at the top, equal at the sides, and
-  // narrowest at the bottom, so the nest reads as sinking into the canvas
-  // rather than sitting dead center. Size varies independently of
-  // amplitude, echoing how the studies range from small studies to
-  // canvas-filling compositions.
-  const baseSize = 24 + note.amplitude * 130;
-  const sizeRoll = rand();
-  const size =
-    sizeRoll < 0.2
-      ? baseSize * (0.3 + rand() * 0.3) // small study
-      : sizeRoll < 0.82
-        ? baseSize * (0.6 + rand() * 0.5) // medium -- the common case
-        : baseSize * (1.2 + rand() * 0.9); // large, canvas-filling
-
-  const layers = 3 + Math.floor(rand() * 2); // 3-4 nested squares
-  const shrink = 0.62 + rand() * 0.1;
-  const hueStep = 18 + rand() * 24;
-  // A rare jarring accent breaks the otherwise-related color stepping --
-  // one unrelated, contrasting hue right at the center, echoing the
-  // surprising bright cores that turn up in some of his studies.
-  const hasAccent = rand() < 0.18;
-
-  ctx.save();
-  let halfW = size / 2;
-  let cy = cursor.y;
-  for (let i = 0; i < layers; i++) {
-    const isCenter = i === layers - 1;
-    let fill: string;
-    if (isCenter && hasAccent) {
-      const hue = (color.hue + 180 + (rand() - 0.5) * 40 + 360) % 360;
-      const sat = clamp(color.saturation + 25, 45, 90);
-      const light = clamp(50 + (rand() - 0.5) * 20, 35, 65);
-      fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
-    } else {
-      const hue = (color.hue + i * hueStep + 360) % 360;
-      const sat = clamp(color.saturation, 28, 58);
-      const light = clamp(color.lightness + (i % 2 === 0 ? 6 : -6), 20, 64);
-      fill = `hsl(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%)`;
-    }
-    ctx.fillStyle = fill;
-    ctx.fillRect(cursor.x - halfW, cy - halfW, halfW * 2, halfW * 2);
-
-    const nextHalf = halfW * shrink;
-    const gap = halfW - nextHalf;
-    // Shift the next square's center down -- the top gap stays wide while
-    // the bottom gap shrinks toward it, the series' signature asymmetric
-    // niche (equal side margins fall out for free since x never shifts).
-    cy += gap * 0.34;
-    halfW = nextHalf;
-  }
-  ctx.restore();
-};
+// Albers (a persistent 4x4 grid of "Homage to the Square" cells) is
+// rendered directly by PaintEngine.renderAlbersCell, which needs a
+// persistent cell -> hue mapping that doesn't fit the single-point
+// StrokeContext shape -- the same reason Rothko and Louis are stubbed out
+// here rather than implemented as an ordinary StyleRenderer.
+const albers: StyleRenderer = () => {};
 
 const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   rothko,

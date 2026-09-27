@@ -71,7 +71,7 @@ painting, and the painters who carried that lineage into minimalism:
 | Martin | **Grid** — a fine, hand-ruled line sweeps steadily row by row at an unvarying, meditative pace | Barely-there pale washes drawn from a full twelve-hue wheel, one per pitch class, rather than just a few |
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
 | Miro | **Sparse** — a handful of isolated biomorphic signs across a mostly bare canvas: an irregular amoeba blob, a looping calligraphic squiggle, a flat dot, a radiating star, or a watchful eye, picked at random per mark | A small, flat alphabet of pure poster-paint color — cadmium red, chrome yellow, ultramarine blue, leaf green — snapped hard to those few anchors rather than drifting across the spectrum |
-| Albers | **All-over** — several flat, unmodulated squares nested one inside the next, scattered across the canvas like tiled "Homage to the Square" studies; the gap between squares is widest at the top, equal at the sides, and narrowest at the bottom, the series' signature asymmetric niche | Warm, often muted earth tones — ochre, brick, rust, olive — stepped ring to ring, occasionally broken by one jarring contrasting color at the center |
+| Albers | **Mosaic** — a persistent 4x4 grid of 16 cells tiles the whole canvas, echoing how his hundreds of "Homage to the Square" studies get exhibited together; pitch register selects which cell a note belongs to, and each hit fully repaints that cell's own nested squares, whose gap is widest at the top, equal at the sides, and narrowest at the bottom, the series' signature asymmetric niche | Warm, often muted earth tones — ochre, brick, rust, olive — persistent per cell like Rothko's bands, occasionally broken by one jarring contrasting color at the center |
 
 ### Major and minor
 
@@ -88,7 +88,7 @@ evoking the stark black enamel paintings he turned to in the late 1940s —
 while major-key pieces keep his normal heated coloring.
 
 The focal family (currently just de Kooning) plus the all-over family
-(Pollock, Kandinsky, Delaunay, Albers) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
+(Pollock, Kandinsky, Delaunay) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the
 music (loudness trend, onset density, how sustained or percussive things
 are) and puts the engine into one of four phases:
 
@@ -101,8 +101,8 @@ are) and puts the engine into one of four phases:
   accent brush style different from the base one, for percussive emphasis.
 - **Composing** — the default per-note stroke behavior.
 
-Rothko, Schiele, Martin, Marden, and Miro paint continuously in their own
-technique regardless of phase (that's how those painters actually worked), with
+Rothko, Schiele, Martin, Marden, Miro, and Albers paint continuously in
+their own technique regardless of phase (that's how those painters actually worked), with
 loudness and onset density modulating intensity and size rather than
 switching modes.
 
