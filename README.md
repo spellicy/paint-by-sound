@@ -25,14 +25,16 @@ involved.
 
 All three ways of getting audio in live together in one **Sound source**
 card. Alongside Listen live and Upload a file, a **Spotify** option lets
-you search Spotify by name and start a track on whichever device already
-has Spotify open (phone, desktop app, smart speaker) via Spotify Connect,
-instead of finding and starting the track yourself in a separate app. It
-only ever picks and starts a track -- Spotify's own playback is
-DRM-protected and exposes no raw audio to the page, so painting the result
-still means hitting **Listen live** afterward, same as any other external
-source. See `src/spotify/config.ts` for the one-time setup (a free Spotify
-Developer app) this needs before it works.
+you search Spotify by name and play it right there, without needing
+Spotify already open and active somewhere else first: connecting creates
+an in-page Spotify Connect device (the Web Playback SDK,
+`src/spotify/player.ts`, Premium required), and starting a track targets
+that device directly. It only ever picks and starts a track -- Spotify's
+own playback is DRM-protected and exposes no raw audio to the page even
+when embedded, so painting the result still means hitting **Listen live**
+afterward, same as any other external source. See `src/spotify/config.ts`
+for the one-time setup (a free Spotify Developer app) this needs before it
+works.
 
 ## How it listens
 
@@ -177,7 +179,8 @@ src/
   spotify/config.ts       Client ID / redirect URI / scopes -- one-time setup lives here
   spotify/pkce.ts         PKCE code-verifier/challenge generation
   spotify/auth.ts         OAuth login redirect, token exchange, refresh, storage
-  spotify/api.ts          track search + start-playback-on-active-device
+  spotify/player.ts       Web Playback SDK -- the in-page Spotify Connect device
+  spotify/api.ts          track search + start-playback (in-page device or active device)
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
   components/             Controls (incl. SpotifyPicker), StatusBar, ConceptPanel, Gallery
 ```
@@ -192,11 +195,17 @@ src/
   talks to Spotify's own API directly from the browser (OAuth via
   Authorization Code + PKCE, no server or client secret involved) purely to
   search tracks and start playback — never to read or analyze audio.
-- The Spotify panel needs a Spotify Premium account (Spotify's playback-
-  control API is Premium-only) and an already-active Spotify session
-  somewhere (phone, desktop app, smart speaker) — it can't launch the app
-  from fully closed. It also needs a Spotify Developer app registered once
-  per deployment; see `src/spotify/config.ts`.
+- The Spotify panel needs a Spotify Premium account — both starting
+  playback at all and the in-page Web Playback SDK device are Premium-only
+  on Spotify's side. It also needs a Spotify Developer app registered once
+  per deployment; see `src/spotify/config.ts`. Reconnecting is required
+  after any change to `SPOTIFY_SCOPES`, since a token issued under the old
+  scope list won't carry a newly-added one.
+- On iPhone, whether Listen live's microphone still pauses Spotify audio
+  played through the in-page player (as opposed to a genuinely separate
+  app, the documented case below) hasn't been verified — it may or may not
+  behave differently since it's the same page's own audio rather than a
+  background app's.
 - On iPhone, Safari pauses other apps' audio the moment a page activates the
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same

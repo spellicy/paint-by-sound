@@ -42,17 +42,24 @@ export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
 }
 
 /**
- * Starts a track on whichever Spotify device the user already has active
- * (phone, desktop app, smart speaker) via Spotify Connect -- no in-page
- * playback or audio capture involved. Requires Premium and at least one
- * device with an open Spotify session; both failure modes are common
- * enough that they're reported back as a friendly reason rather than a
- * thrown error, since it's not something painting-side code can retry.
+ * Starts a track via Spotify Connect. With a `deviceId` (the in-page Web
+ * Playback SDK device -- see spotify/player.ts), it targets that device
+ * directly, so playback starts right here with no other Spotify session
+ * needed. Without one, it falls back to whichever device the user already
+ * has active elsewhere (phone, desktop app, smart speaker). Requires
+ * Premium and, in the no-`deviceId` case, at least one device with an open
+ * Spotify session; both failure modes are common enough that they're
+ * reported back as a friendly reason rather than a thrown error, since
+ * it's not something painting-side code can retry.
  */
-export async function playTrackOnActiveDevice(uri: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+export async function playTrackOnActiveDevice(
+  uri: string,
+  deviceId?: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
   let res: Response;
   try {
-    res = await authedFetch("https://api.spotify.com/v1/me/player/play", {
+    res = await authedFetch(`https://api.spotify.com/v1/me/player/play${query}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ uris: [uri] }),
@@ -62,7 +69,12 @@ export async function playTrackOnActiveDevice(uri: string): Promise<{ ok: true }
   }
   if (res.status === 204) return { ok: true };
   if (res.status === 404) {
-    return { ok: false, reason: "No active Spotify device -- open Spotify on your phone or computer first." };
+    return {
+      ok: false,
+      reason: deviceId
+        ? "The in-page player isn't ready yet -- wait a moment and try again."
+        : "No active Spotify device -- open Spotify on your phone or computer first.",
+    };
   }
   if (res.status === 403) {
     return { ok: false, reason: "Starting playback needs Spotify Premium." };

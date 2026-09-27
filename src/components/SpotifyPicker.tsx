@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { isSpotifyConfigured } from "../spotify/config";
 import { beginLogin, disconnect, isConnected } from "../spotify/auth";
 import { playTrackOnActiveDevice, searchTracks, type SpotifyTrack } from "../spotify/api";
+import { disconnectEmbeddedPlayer, ensureEmbeddedPlayer, type PlayerStatus } from "../spotify/player";
 
 interface SpotifyPickerProps {
   /** Called once a track has actually started playing on the user's active
@@ -22,6 +23,17 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   const [results, setResults] = useState<SpotifyTrack[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [playState, setPlayState] = useState<PlayState>(null);
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus>({ state: "connecting" });
+
+  // Once connected, this tab becomes its own Spotify Connect device (the
+  // Web Playback SDK) -- so hitting Play never needs Spotify already open
+  // somewhere else. Initializing this here, as soon as the panel is in its
+  // connected state, means the device is usually already ready by the time
+  // a search finishes and the user picks a track.
+  useEffect(() => {
+    if (!connected) return;
+    ensureEmbeddedPlayer(setPlayerStatus);
+  }, [connected]);
 
   useEffect(() => {
     if (!query.trim()) return;
@@ -63,9 +75,9 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
     return (
       <div className="mt-3 space-y-2 border-t border-stone-800 pt-3">
         <p className="text-xs text-stone-500">
-          Or start a track on{" "}
-          <strong className="font-medium text-stone-400">Spotify</strong> without
-          leaving this page, then hit Listen live to paint it.
+          Or search <strong className="font-medium text-stone-400">Spotify</strong> and
+          play a track right here (Premium required), then hit Listen live to
+          paint it.
         </p>
         <button
           onClick={() => void beginLogin()}
@@ -79,7 +91,15 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
 
   const handlePlay = async (track: SpotifyTrack) => {
     setPlayState(null);
-    const result = await playTrackOnActiveDevice(track.uri);
+    if (playerStatus.state !== "ready") {
+      setPlayState({
+        trackId: track.id,
+        ok: false,
+        message: "Still connecting the in-page player -- try again in a moment.",
+      });
+      return;
+    }
+    const result = await playTrackOnActiveDevice(track.uri, playerStatus.deviceId);
     if (result.ok) {
       setPlayState({ trackId: track.id, ok: true, message: "Playing -- hit Listen live to paint it." });
       onTrackSelected(track);
@@ -94,6 +114,7 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
         <p className="text-xs font-medium text-stone-400">Play from Spotify</p>
         <button
           onClick={() => {
+            disconnectEmbeddedPlayer();
             disconnect();
             setConnected(false);
             setResults([]);
@@ -104,6 +125,12 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
           Disconnect
         </button>
       </div>
+      {playerStatus.state === "connecting" && (
+        <p className="text-[10px] text-stone-600">Connecting in-page player...</p>
+      )}
+      {playerStatus.state === "error" && (
+        <p className="text-[10px] text-amber-500">{playerStatus.message}</p>
+      )}
       <input
         value={query}
         onChange={(e) => handleQueryChange(e.target.value)}
