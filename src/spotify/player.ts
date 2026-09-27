@@ -58,6 +58,24 @@ function loadSdk(): Promise<void> {
   return sdkLoadPromise;
 }
 
+/** Apple requires every iOS browser to embed its WebKit engine, but reserves
+ * full DRM/EME protected-content playback -- which Spotify's Web Playback
+ * SDK depends on -- to Safari's own first-party process. Chrome, Firefox,
+ * Edge, and Opera on iOS are all third-party WKWebView wrappers, so they
+ * never get that capability: the SDK's `playback_error` there is permanent,
+ * not the retry-able autoplay-lock quirk real Safari has. No JS workaround
+ * exists, so the UI needs to say that plainly instead of implying "try
+ * again" on a failure that structurally never will succeed. */
+export function isThirdPartyIOSBrowser(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isThirdPartyWrapper = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  return isIOS && isThirdPartyWrapper;
+}
+
+const THIRD_PARTY_IOS_MESSAGE =
+  "Spotify can't play in-page in this browser on iPhone/iPad -- Apple reserves that to Safari itself. Open this page in Safari, or start the track in the Spotify app on another device first.";
+
 export type PlayerStatus =
   | { state: "connecting" }
   | { state: "ready"; deviceId: string }
@@ -117,7 +135,7 @@ export function ensureEmbeddedPlayer(
         onStatus({ state: "error", message: "The in-page player needs Spotify Premium." });
       });
       player.addListener("playback_error", ({ message }) => {
-        onPlaybackError(message || "Playback error.");
+        onPlaybackError(isThirdPartyIOSBrowser() ? THIRD_PARTY_IOS_MESSAGE : message || "Playback error.");
       });
 
       void player.connect();

@@ -208,6 +208,15 @@ src/
   a known, currently unresolved gap in Spotify's own SDK where that
   doesn't always take effect on the first click. If Play reports a
   playback error, try it again.
+- On iPhone/iPad, the in-page Web Playback SDK only works in Safari itself.
+  Chrome, Firefox, Edge, and Opera on iOS are all required by Apple to embed
+  Safari's own WebKit engine, but Apple reserves full DRM/protected-content
+  playback — which Spotify's player needs — to Safari's own process, not to
+  a third-party app merely embedding it. The SDK fails there every time, not
+  just on the first click like the retry-able Safari quirk above; the app
+  detects this (`spotify/player.ts`'s `isThirdPartyIOSBrowser`) and says so
+  rather than implying a retry will help. Use Safari, or start the track via
+  Spotify Connect on another device instead.
 - On iPhone, whether Listen live's microphone still pauses Spotify audio
   played through the in-page player (as opposed to a genuinely separate
   app, the documented case below) hasn't been verified — it may or may not

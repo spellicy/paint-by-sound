@@ -6,6 +6,7 @@ import {
   activatePlaybackElement,
   disconnectEmbeddedPlayer,
   ensureEmbeddedPlayer,
+  isThirdPartyIOSBrowser,
   type PlayerStatus,
 } from "../spotify/player";
 
@@ -29,6 +30,9 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [playState, setPlayState] = useState<PlayState>(null);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>({ state: "connecting" });
+  // Fixed for the life of the tab -- computed once rather than re-checked on
+  // every render.
+  const [thirdPartyIOS] = useState(isThirdPartyIOSBrowser);
 
   // Once connected, this tab becomes its own Spotify Connect device (the
   // Web Playback SDK) -- so hitting Play never needs Spotify already open
@@ -89,6 +93,12 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
           play a track right here (Premium required), then hit Listen live to
           paint it.
         </p>
+        {thirdPartyIOS && (
+          <p className="text-[10px] text-amber-500">
+            Heads up: on iPhone/iPad, in-page playback only works in Safari --
+            Apple blocks it in Chrome, Firefox, and other browsers here.
+          </p>
+        )}
         <button
           onClick={() => void beginLogin()}
           className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-stone-950 hover:bg-emerald-500"
@@ -139,6 +149,11 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
           Disconnect
         </button>
       </div>
+      {thirdPartyIOS && (
+        <p className="text-[10px] text-amber-500">
+          In-page playback needs Safari on iPhone/iPad -- Apple blocks it here.
+        </p>
+      )}
       {playerStatus.state === "connecting" && (
         <p className="text-[10px] text-stone-600">Connecting in-page player...</p>
       )}
