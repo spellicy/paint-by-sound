@@ -5,13 +5,17 @@ import { playTrackOnActiveDevice, searchTracks, type SpotifyTrack } from "../spo
 
 interface SpotifyPickerProps {
   /** Called once a track has actually started playing on the user's active
-   * Spotify device -- lets the app fill in a track name / inspiration
-   * title the same way an uploaded file's filename does. */
+   * Spotify device -- lets the app fill in a track name the same way an
+   * uploaded file's filename does. */
   onTrackSelected: (track: SpotifyTrack) => void;
 }
 
 type PlayState = { trackId: string; message: string; ok: boolean } | null;
 
+/** Lives inside the same "Sound source" card as Listen live / Upload a
+ * file -- all three ways of getting audio into the analyzer belong in one
+ * place -- so this renders as a plain continuation of that section (a top
+ * divider, no card of its own) rather than a competing bordered panel. */
 export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   const [connected, setConnected] = useState(isConnected());
   const [query, setQuery] = useState("");
@@ -46,10 +50,9 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
 
   if (!isSpotifyConfigured()) {
     return (
-      <div className="rounded-lg border border-stone-800 bg-stone-950/60 p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Spotify</h3>
-        <p className="mt-2 text-xs text-stone-600">
-          Not set up yet -- add a Client ID in{" "}
+      <div className="mt-3 border-t border-stone-800 pt-3">
+        <p className="text-xs text-stone-600">
+          Spotify not set up yet -- add a Client ID in{" "}
           <code className="text-stone-500">src/spotify/config.ts</code>.
         </p>
       </div>
@@ -58,12 +61,11 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
 
   if (!connected) {
     return (
-      <div className="space-y-2 rounded-lg border border-stone-800 bg-stone-950/60 p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Spotify</h3>
+      <div className="mt-3 space-y-2 border-t border-stone-800 pt-3">
         <p className="text-xs text-stone-500">
-          Search Spotify and start a track on your phone or computer without
-          leaving this page -- then hit{" "}
-          <strong className="text-stone-400">Listen live</strong> to paint it.
+          Or start a track on{" "}
+          <strong className="font-medium text-stone-400">Spotify</strong> without
+          leaving this page, then hit Listen live to paint it.
         </p>
         <button
           onClick={() => void beginLogin()}
@@ -87,9 +89,9 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   };
 
   return (
-    <div className="space-y-3 rounded-lg border border-stone-800 bg-stone-950/60 p-4">
+    <div className="mt-3 space-y-2 border-t border-stone-800 pt-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Spotify</h3>
+        <p className="text-xs font-medium text-stone-400">Play from Spotify</p>
         <button
           onClick={() => {
             disconnect();

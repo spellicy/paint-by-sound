@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SoundAnalyzer, type NoteEvent } from "../audio/analyzer";
 import type { NoteColor } from "../audio/pitchColor";
 import type { PaintPhase } from "../audio/phraseTracker";
 import { PaintEngine } from "../paint/PaintEngine";
 import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
-import { analyzeTheme, type ThemeInfluence } from "../theme/themeAnalyzer";
 import { completeLoginIfRedirected } from "../spotify/auth";
 import type { SpotifyTrack } from "../spotify/api";
 
@@ -30,12 +29,6 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
   const [styleId, setStyleIdState] = useState<PaintStyleId>("rothko");
   const [sourceMode, setSourceMode] = useState<SourceMode>("idle");
   const [trackName, setTrackName] = useState<string>("");
-  const [inspirationTitle, setInspirationTitle] = useState<string>("");
-  const [inspirationLyrics, setInspirationLyrics] = useState<string>("");
-  const inspirationTitleRef = useRef("");
-  useEffect(() => {
-    inspirationTitleRef.current = inspirationTitle;
-  }, [inspirationTitle]);
   const [status, setStatus] = useState<LiveStatus>({
     note: null,
     octave: null,
@@ -47,15 +40,6 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     keyTonic: null,
   });
   const [error, setError] = useState<string | null>(null);
-
-  const themeInfluence = useMemo<ThemeInfluence>(
-    () => analyzeTheme(`${inspirationTitle} ${inspirationLyrics}`),
-    [inspirationTitle, inspirationLyrics],
-  );
-
-  useEffect(() => {
-    engineRef.current?.setTheme(themeInfluence);
-  }, [themeInfluence]);
 
   // Picks the OAuth flow back up if Spotify just redirected here with
   // `?code=...` -- a no-op on any other page load. Runs once regardless of
@@ -133,11 +117,6 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
         });
         const name = file.name.replace(/\.[^/.]+$/, "");
         setTrackName(name);
-        // Only auto-fill the inspiration title from the filename if the
-        // user hasn't typed their own -- don't clobber a title they set.
-        if (!inspirationTitleRef.current.trim()) {
-          setInspirationTitle(humanizeFilename(name));
-        }
         setSourceMode("file");
         await analyzer.playFile(file);
       } catch (e) {
@@ -175,13 +154,9 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
    * analyzer or sourceMode -- Spotify audio plays outside this page
    * entirely, so the user still hits "Listen live" to paint it, exactly as
    * they would for any other external source. This just fills in the track
-   * name / inspiration title the way an uploaded file's filename does. */
+   * name the way an uploaded file's filename does. */
   const pickSpotifyTrack = useCallback((track: SpotifyTrack) => {
-    const name = `${track.name} — ${track.artists.join(", ")}`;
-    setTrackName(name);
-    if (!inspirationTitleRef.current.trim()) {
-      setInspirationTitle(track.name);
-    }
+    setTrackName(`${track.name} — ${track.artists.join(", ")}`);
   }, []);
 
   const clearCanvas = useCallback(() => {
@@ -223,15 +198,5 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     stop,
     clearCanvas,
     saveCurrentToGallery,
-    inspirationTitle,
-    setInspirationTitle,
-    inspirationLyrics,
-    setInspirationLyrics,
-    themeInfluence,
   };
-}
-
-/** "my_song-title_final" -> "my song title final" */
-function humanizeFilename(name: string): string {
-  return name.replace(/[_-]+/g, " ").trim();
 }
