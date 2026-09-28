@@ -5,11 +5,9 @@ import type { PaintPhase } from "../audio/phraseTracker";
 import { PaintEngine } from "../paint/PaintEngine";
 import type { PaintStyleId } from "../paint/types";
 import { saveToGallery, type GalleryPiece } from "../gallery/storage";
-import { completeLoginIfRedirected } from "../spotify/auth";
-import type { SpotifyTrack } from "../spotify/api";
-import { pauseEmbeddedPlayback } from "../spotify/player";
+import type { AudiusTrack } from "../audius/api";
 
-export type SourceMode = "idle" | "file" | "mic";
+export type SourceMode = "idle" | "file" | "mic" | "audius";
 
 export interface LiveStatus {
   note: string | null;
@@ -41,19 +39,6 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     keyTonic: null,
   });
   const [error, setError] = useState<string | null>(null);
-
-  // Picks the OAuth flow back up if Spotify just redirected here with
-  // `?code=...` -- a no-op on any other page load. Runs once regardless of
-  // whether Spotify is configured; `completeLoginIfRedirected` itself is a
-  // no-op when there's no `code` in the URL. Surfaces a failure (e.g. the
-  // in-progress login getting lost) through the same error banner as
-  // mic/file errors -- this used to fail silently, which on Safari looked
-  // like tapping "Connect Spotify" simply doing nothing.
-  useEffect(() => {
-    void completeLoginIfRedirected().then((result) => {
-      if (!result.ok) setError(result.reason);
-    });
-  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -109,11 +94,6 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     unsubRef.current?.();
     unsubRef.current = null;
     setSourceMode("idle");
-    // A track started via the embedded Spotify player plays outside this
-    // app's own audio pipeline entirely, so stopping analysis above never
-    // touched it -- Stop left Spotify running forever with no way to
-    // silence it from here. A safe no-op if Spotify was never connected.
-    pauseEmbeddedPlayback();
   }, []);
 
   const playFile = useCallback(
@@ -160,15 +140,30 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     }
   }, [ensureAnalyzer]);
 
-  /** A track picked (and actually started playing, on the user's own
-   * Spotify device) via the Spotify search panel. This never touches the
-   * analyzer or sourceMode -- Spotify audio plays outside this page
-   * entirely, so the user still hits "Listen live" to paint it, exactly as
-   * they would for any other external source. This just fills in the track
-   * name the way an uploaded file's filename does. */
-  const pickSpotifyTrack = useCallback((track: SpotifyTrack) => {
-    setTrackName(`${track.name} — ${track.artists.join(", ")}`);
-  }, []);
+  /** A track picked via the Audius search panel. Unlike the earlier Spotify
+   * integration this replaced, Audius serves plain, non-DRM audio, so it's
+   * fetched and decoded straight into the analyzer here -- no separate
+   * "Listen live" capture step needed, exactly like playFile. */
+  const playAudiusTrack = useCallback(
+    async (track: AudiusTrack) => {
+      setError(null);
+      try {
+        const analyzer = ensureAnalyzer();
+        unsubRef.current?.();
+        unsubRef.current = analyzer.onNote((note) => {
+          engineRef.current?.setKeyEstimate(analyzer.getKeyEstimate());
+          engineRef.current?.paintNote(note);
+        });
+        setTrackName(`${track.title} — ${track.artist}`);
+        setSourceMode("audius");
+        await analyzer.playUrl(track.streamUrl);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not play that track.");
+        setSourceMode("idle");
+      }
+    },
+    [ensureAnalyzer],
+  );
 
   const clearCanvas = useCallback(() => {
     engineRef.current?.clear();
@@ -205,7 +200,7 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
     playFile,
     prepareFileUpload,
     startMic,
-    pickSpotifyTrack,
+    playAudiusTrack,
     stop,
     clearCanvas,
     saveCurrentToGallery,

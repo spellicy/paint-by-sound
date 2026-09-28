@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { PAINT_STYLES } from "../paint/types";
 import type { PaintStyleId } from "../paint/types";
 import type { SourceMode } from "../hooks/usePaintBySound";
-import { SpotifyPicker } from "./SpotifyPicker";
-import type { SpotifyTrack } from "../spotify/api";
+import { AudiusPicker } from "./AudiusPicker";
+import type { AudiusTrack } from "../audius/api";
 import { isIOS } from "../platform";
 
 interface ControlsProps {
@@ -13,7 +13,7 @@ interface ControlsProps {
   onPlayFile: (file: File) => void;
   onPrepareFileUpload: () => void;
   onStartMic: () => void;
-  onSpotifyTrackSelected: (track: SpotifyTrack) => void;
+  onAudiusTrackSelected: (track: AudiusTrack) => void;
   onStop: () => void;
   onClear: () => void;
   onSave: () => void;
@@ -26,7 +26,7 @@ export function Controls({
   onPlayFile,
   onPrepareFileUpload,
   onStartMic,
-  onSpotifyTrackSelected,
+  onAudiusTrackSelected,
   onStop,
   onClear,
   onSave,
@@ -97,12 +97,12 @@ export function Controls({
             On iPhone/iPad, play from a genuinely separate speaker or device
             &mdash; iOS forces echo cancellation on regardless of the source,
             so anything played through this same phone's own speaker gets
-            filtered out as if it were an echo, leaving only room noise. The
-            Spotify search below already accounts for this by playing on
-            another device rather than this one.
+            filtered out as if it were an echo, leaving only room noise.
+            (Audius below isn't affected -- it plays through the analyzer
+            directly, not through the phone's speaker/mic at all.)
           </p>
         )}
-        <SpotifyPicker onTrackSelected={onSpotifyTrackSelected} />
+        <AudiusPicker onTrackSelected={onAudiusTrackSelected} />
       </div>
 
       <div>

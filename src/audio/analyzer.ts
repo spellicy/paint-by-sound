@@ -66,8 +66,25 @@ export class SoundAnalyzer {
     // source playing into a suspended context (no analyser data, no errors).
     await this.ctx.resume();
     const arrayBuffer = await file.arrayBuffer();
+    return this.playArrayBuffer(arrayBuffer);
+  }
+
+  /** Fetches and plays audio from a URL (an Audius track's stream endpoint)
+   * exactly like an uploaded file -- decoded and analyzed directly via the
+   * Web Audio API, no DRM, no mic, works identically on every platform. */
+  async playUrl(url: string): Promise<{ duration: number }> {
+    this.stop();
+    // Same reasoning as playFile: resume before the async network gap.
+    await this.ctx.resume();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not fetch that track (${res.status}).`);
+    const arrayBuffer = await res.arrayBuffer();
+    return this.playArrayBuffer(arrayBuffer);
+  }
+
+  private async playArrayBuffer(arrayBuffer: ArrayBuffer): Promise<{ duration: number }> {
     const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-    // Decoding can take a while for a large file; re-resume in case the
+    // Decoding (or fetching) can take a while; re-resume in case the
     // context suspended again during that gap.
     if (this.ctx.state !== "running") await this.ctx.resume();
 
@@ -99,8 +116,8 @@ export class SoundAnalyzer {
     // model of "what my own speaker is currently outputting" and subtracts
     // it from the mic input so a call partner doesn't hear themselves back;
     // when the music being painted is playing through this same device's
-    // speaker (the common case with the embedded Spotify player, or any
-    // source played on a laptop's own speakers) that's exactly the signal
+    // own speaker (e.g. a source played on a laptop's built-in speakers)
+    // that's exactly the signal
     // this app wants to analyze, so leaving it on suppresses the song and
     // passes through mostly whatever doesn't match that model -- i.e. room
     // noise. Noise suppression is similarly tuned to strip anything that

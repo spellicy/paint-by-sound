@@ -24,17 +24,20 @@ MP3/WAV directly and works reliably on a single device with no microphone
 involved.
 
 All three ways of getting audio in live together in one **Sound source**
-card. Alongside Listen live and Upload a file, a **Spotify** option lets
-you search Spotify by name and play it right there, without needing
-Spotify already open and active somewhere else first: connecting creates
-an in-page Spotify Connect device (the Web Playback SDK,
-`src/spotify/player.ts`, Premium required), and starting a track targets
-that device directly. It only ever picks and starts a track -- Spotify's
-own playback is DRM-protected and exposes no raw audio to the page even
-when embedded, so painting the result still means hitting **Listen live**
-afterward, same as any other external source. See `src/spotify/config.ts`
-for the one-time setup (a free Spotify Developer app) this needs before it
-works.
+card. Alongside Listen live and Upload a file, an **Audius** option lets
+you search Audius's open, independent-artist catalog by name and play a
+track directly into the analyzer -- no login, no separate device, no extra
+"now hit Listen live" step. This app looked at Spotify first, but every
+major licensed streaming catalog (Spotify, Apple Music, Tidal, Amazon
+Music, YouTube Music) is DRM-protected by label licensing requirement and
+deliberately exposes no raw audio to a web page, no matter how it's
+embedded -- painting from one of those would always mean a separate
+capture step (an actual microphone, pointed at an actual speaker).
+Audius's stream endpoints serve plain, non-DRM audio files instead, so a
+picked track is fetched and decoded the same way **Upload a file** decodes
+an MP3, identically on every platform including iPhone. The tradeoff is
+catalog: independent and emerging artists rather than mainstream/major-label
+music.
 
 ## How it listens
 
@@ -176,13 +179,10 @@ src/
   paint/motifs.ts         subject primitive -> canvas anchor points
   gallery/storage.ts      IndexedDB-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
-  spotify/config.ts       Client ID / redirect URI / scopes -- one-time setup lives here
-  spotify/pkce.ts         PKCE code-verifier/challenge generation
-  spotify/auth.ts         OAuth login redirect, token exchange, refresh, storage
-  spotify/player.ts       Web Playback SDK -- the in-page Spotify Connect device
-  spotify/api.ts          track search + start-playback (in-page device or active device)
+  audius/api.ts           track search + stream URLs (no auth, no API key)
+  platform.ts             isIOS() -- iPhone/iPad detection, keyed on WebKit quirks
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
-  components/             Controls (incl. SpotifyPicker), StatusBar, ConceptPanel, Gallery
+  components/             Controls (incl. AudiusPicker), StatusBar, ConceptPanel, Gallery
 ```
 
 ## Notes & limitations
@@ -191,45 +191,25 @@ src/
   vocal); dense polyphonic mixes will still paint, just less "in tune" with
   any single note.
 - Everything is local to the browser — no backend, no audio ever leaves the
-  machine it's played on. Connecting Spotify is the one opt-in exception: it
-  talks to Spotify's own API directly from the browser (OAuth via
-  Authorization Code + PKCE, no server or client secret involved) purely to
-  search tracks and start playback — never to read or analyze audio.
-- The Spotify panel needs a Spotify Premium account — both starting
-  playback at all and the in-page Web Playback SDK device are Premium-only
-  on Spotify's side. It also needs a Spotify Developer app registered once
-  per deployment; see `src/spotify/config.ts`. Reconnecting is required
-  after any change to `SPOTIFY_SCOPES`, since a token issued under the old
-  scope list won't carry a newly-added one.
-- On desktop and Android, the Spotify panel plays through an embedded Web
-  Playback SDK device, so a picked track starts right in this tab. Desktop
-  Safari's autoplay policy blocks that device's internal audio element until
-  a genuine click unlocks it — every Play click calls Spotify's documented
-  `activateElement()`/`resume()` workaround for this (`spotify/player.ts`),
-  but Safari specifically has a known, currently unresolved gap in Spotify's
-  own SDK where that doesn't always take effect on the first click. If Play
-  reports a playback error, try it again.
-- On iPhone/iPad, the Spotify panel skips the embedded player entirely and
-  plays through Spotify Connect on whatever device you already have Spotify
-  open on instead (`SpotifyPicker.tsx` checks `platform.ts`'s `isIOS()`).
-  That's not a fallback for a smaller bug — the embedded, same-device player
-  is a dead end on iOS regardless of browser: non-Safari iOS browsers can't
-  play DRM-protected content in-page at all (Apple reserves that capability
-  to Safari's own process, not to a third-party app merely embedding its
-  WebKit engine), and even Safari's own copy of it can't be *heard back* by
-  Listen live, since iOS forces mic echo cancellation on regardless of what
-  this app requests (see the next bullet) — it would cancel out the very
-  audio it's supposed to paint. Routing through Connect to a genuinely
-  separate device sidesteps both problems at once, since it's not this
-  phone playing the track either way.
+  machine it's played on. Audius is the one opt-in exception: it talks to
+  Audius's own open API directly from the browser (no login, no API key)
+  purely to search tracks and fetch a stream URL — never to read or analyze
+  anyone else's audio. That's also why it's a straightforward `fetch` +
+  `decodeAudioData`, not a special code path: `audius/api.ts` returns a
+  plain audio-file URL, and `SoundAnalyzer.playUrl` (`audio/analyzer.ts`)
+  handles it exactly like an uploaded file.
+- Audius's catalog is independent and emerging artists, not major-label
+  music — that's the direct consequence of it serving genuinely non-DRM
+  audio: a mainstream commercial catalog (Spotify, Apple Music, Tidal,
+  Amazon Music, YouTube Music) requires the same DRM protection regardless
+  of provider, which blocks exactly the raw audio access this app needs.
 - Listen live disables the mic's echo cancellation and noise suppression
   (`audio/analyzer.ts`). Both are voice-call optimizations that, left on,
   actively suppress the very thing being painted whenever the source is
-  playing through the same device's own speaker (the common case with the
-  embedded Spotify player, or any source played on a laptop's built-in
-  speakers): echo cancellation specifically models "what my speaker is
-  outputting" and subtracts it from the mic input, so the song gets
-  filtered out and mostly room noise passes through instead. This genuinely
+  playing through the same device's own speaker (e.g. a source played on a
+  laptop's built-in speakers): echo cancellation specifically models "what
+  my speaker is outputting" and subtracts it from the mic input, so the
+  song gets filtered out and mostly room noise passes through instead. This genuinely
   fixes it on desktop and Android, but **not** on iOS: WebKit has a
   long-standing, still-open bug
   ([webkit.org/b/179411](https://bugs.webkit.org/show_bug.cgi?id=179411))

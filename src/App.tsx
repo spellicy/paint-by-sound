@@ -20,7 +20,7 @@ export default function App() {
     playFile,
     prepareFileUpload,
     startMic,
-    pickSpotifyTrack,
+    playAudiusTrack,
     stop,
     clearCanvas,
     saveCurrentToGallery,
@@ -85,7 +85,7 @@ export default function App() {
               onPlayFile={playFile}
               onPrepareFileUpload={prepareFileUpload}
               onStartMic={startMic}
-              onSpotifyTrackSelected={pickSpotifyTrack}
+              onAudiusTrackSelected={playAudiusTrack}
               onStop={stop}
               onClear={clearCanvas}
               onSave={handleSave}
