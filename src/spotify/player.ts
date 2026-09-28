@@ -5,6 +5,7 @@
 // painting the result still means a capture step afterward (Listen live).
 
 import { getAccessToken } from "./auth";
+import { pauseOnActiveDevice } from "./api";
 import { isIOS } from "../platform";
 
 interface SpotifyPlayerInstance {
@@ -12,7 +13,6 @@ interface SpotifyPlayerInstance {
   disconnect(): void;
   activateElement(): Promise<void>;
   resume(): Promise<void>;
-  pause(): Promise<void>;
   addListener(event: "ready" | "not_ready", cb: (data: { device_id: string }) => void): void;
   addListener(
     event: "initialization_error" | "authentication_error" | "account_error" | "playback_error",
@@ -81,6 +81,7 @@ export type PlayerStatus =
   | { state: "error"; message: string };
 
 let playerInstance: SpotifyPlayerInstance | null = null;
+let readyDeviceId: string | null = null;
 
 /** Creates (once per page load) and connects the in-page "Paint by Sound"
  * device. Requires Spotify Premium -- the SDK reports that as
@@ -119,9 +120,11 @@ export function ensureEmbeddedPlayer(
       playerInstance = player;
 
       player.addListener("ready", ({ device_id }) => {
+        readyDeviceId = device_id;
         onStatus({ state: "ready", deviceId: device_id });
       });
       player.addListener("not_ready", () => {
+        readyDeviceId = null;
         onStatus({ state: "connecting" });
       });
       player.addListener("initialization_error", ({ message }) => {
@@ -151,6 +154,7 @@ export function ensureEmbeddedPlayer(
 export function disconnectEmbeddedPlayer(): void {
   playerInstance?.disconnect();
   playerInstance = null;
+  readyDeviceId = null;
 }
 
 /** Mobile browsers (and, per Spotify's own SDK, Safari even on desktop)
@@ -168,10 +172,18 @@ export function activatePlaybackElement(): void {
   void playerInstance.resume();
 }
 
-/** Pauses Spotify on the in-page device, if one exists and is playing --
- * a safe no-op when Spotify was never connected. Hitting "Stop" only ever
- * stopped this app's own mic/file capture; it left a track started via the
- * embedded player running forever with no way to silence it from here. */
+/** Pauses Spotify on the in-page device, if one is connected -- a safe
+ * no-op otherwise. Hitting "Stop" only ever stopped this app's own mic/file
+ * capture; it left a track started via the embedded player running forever
+ * with no way to silence it from here.
+ *
+ * Goes through the same Connect REST endpoint `playTrackOnActiveDevice`
+ * used to start playback, rather than the SDK's own local `player.pause()`
+ * -- see `pauseOnActiveDevice`'s comment in api.ts for why: the SDK's local
+ * state gets left out of sync with reality on Safari specifically when
+ * playback was started via that REST call, making its own pause() a
+ * silent no-op there. */
 export function pauseEmbeddedPlayback(): void {
-  void playerInstance?.pause();
+  if (!readyDeviceId) return;
+  void pauseOnActiveDevice(readyDeviceId);
 }

@@ -81,3 +81,26 @@ export async function playTrackOnActiveDevice(
   }
   return { ok: false, reason: `Spotify couldn't start that track (${res.status}).` };
 }
+
+/**
+ * Pauses playback on the given device via the same Connect REST control
+ * plane `playTrackOnActiveDevice` uses to start it -- deliberately not the
+ * Web Playback SDK's own local `player.pause()`. Spotify's SDK has a
+ * long-reported bug (Safari specifically) where starting playback via this
+ * REST `/play` endpoint leaves the SDK's local Player object out of sync
+ * with what's actually playing, since it never went through the SDK's own
+ * play/resume call -- so its `pause()` silently no-ops. Issuing pause the
+ * same way play was issued sidesteps that local state entirely. Best-effort:
+ * Stop doesn't need to explain *why* silencing Spotify failed, just try.
+ */
+export async function pauseOnActiveDevice(deviceId: string): Promise<boolean> {
+  try {
+    const res = await authedFetch(
+      `https://api.spotify.com/v1/me/player/pause?device_id=${encodeURIComponent(deviceId)}`,
+      { method: "PUT" },
+    );
+    return res.status === 204;
+  } catch {
+    return false;
+  }
+}
