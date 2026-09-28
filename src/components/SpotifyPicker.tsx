@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isSpotifyConfigured } from "../spotify/config";
 import { beginLogin, disconnect, isConnected } from "../spotify/auth";
-import { playTrackOnActiveDevice, searchTracks, type SpotifyTrack } from "../spotify/api";
+import { listAvailableDevices, playTrackOnActiveDevice, searchTracks, type SpotifyTrack } from "../spotify/api";
 import {
   activatePlaybackElement,
   disconnectEmbeddedPlayer,
@@ -126,10 +126,24 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   const handlePlay = async (track: SpotifyTrack) => {
     setPlayState(null);
     if (onIOS) {
-      // No deviceId -- targets whatever Spotify session the user already
-      // has open elsewhere, since this phone can neither play nor capture
-      // it itself (see the effect above).
-      const result = await playTrackOnActiveDevice(track.uri);
+      // Lists devices and targets one explicitly, rather than relying on
+      // Spotify's own "whichever device is active" resolution (omitting
+      // deviceId) -- that flag only reliably sets once something has
+      // actually started playing there in the current session, so a device
+      // that's genuinely open elsewhere but currently paused/idle commonly
+      // isn't "active" and gets a 404 despite being a perfectly usable
+      // target. Preferring one already marked active, when there is one,
+      // avoids interrupting a *different* already-playing device.
+      const devices = await listAvailableDevices();
+      const target = devices.find((d) => d.isActive) ?? devices[0];
+      if (!target) {
+        setPlayState({
+          ok: false,
+          message: "No Spotify device found -- open Spotify on your phone or computer first.",
+        });
+        return;
+      }
+      const result = await playTrackOnActiveDevice(track.uri, target.id);
       if (result.ok) {
         setPlayState({
           ok: true,

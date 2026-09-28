@@ -41,25 +41,53 @@ export async function searchTracks(query: string): Promise<SpotifyTrack[]> {
   }));
 }
 
+export interface SpotifyDevice {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 /**
- * Starts a track via Spotify Connect. With a `deviceId` (the in-page Web
- * Playback SDK device -- see spotify/player.ts), it targets that device
- * directly, so playback starts right here with no other Spotify session
- * needed. Without one, it falls back to whichever device the user already
- * has active elsewhere (phone, desktop app, smart speaker). Requires
- * Premium and, in the no-`deviceId` case, at least one device with an open
- * Spotify session; both failure modes are common enough that they're
- * reported back as a friendly reason rather than a thrown error, since
- * it's not something painting-side code can retry.
+ * Lists the user's devices Spotify Connect currently knows about. A device
+ * merely having the Spotify app open isn't enough to make it Connect's
+ * notion of "the active device" (`isActive` below) -- that flag only
+ * reliably sets once something has actually started playing there in the
+ * current session, so "open but paused/idle elsewhere" commonly isn't
+ * active despite genuinely being available. This endpoint lists it either
+ * way, which lets callers target it explicitly by id instead of relying on
+ * that flag. Devices with no id (Spotify marks some restricted/unusable
+ * devices this way) are filtered out, since they can't be a play target.
+ */
+export async function listAvailableDevices(): Promise<SpotifyDevice[]> {
+  const res = await authedFetch("https://api.spotify.com/v1/me/player/devices");
+  if (!res.ok) return [];
+  const json = await res.json();
+  interface RawDevice {
+    id: string | null;
+    name: string;
+    is_active: boolean;
+  }
+  return (json.devices ?? [])
+    .filter((d: RawDevice): d is RawDevice & { id: string } => d.id !== null)
+    .map((d: RawDevice & { id: string }) => ({ id: d.id, name: d.name, isActive: d.is_active }));
+}
+
+/**
+ * Starts a track via Spotify Connect on the given device -- either the
+ * in-page Web Playback SDK device (spotify/player.ts) so playback starts
+ * right here, or an external one from `listAvailableDevices` so it starts
+ * wherever the user already has Spotify open. Requires Premium; both
+ * failure modes are common enough that they're reported back as a friendly
+ * reason rather than a thrown error, since it's not something painting-side
+ * code can retry.
  */
 export async function playTrackOnActiveDevice(
   uri: string,
-  deviceId?: string,
+  deviceId: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
   let res: Response;
   try {
-    res = await authedFetch(`https://api.spotify.com/v1/me/player/play${query}`, {
+    res = await authedFetch(`https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(deviceId)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ uris: [uri] }),
@@ -69,12 +97,7 @@ export async function playTrackOnActiveDevice(
   }
   if (res.status === 204) return { ok: true };
   if (res.status === 404) {
-    return {
-      ok: false,
-      reason: deviceId
-        ? "The in-page player isn't ready yet -- wait a moment and try again."
-        : "No active Spotify device -- open Spotify on your phone or computer first.",
-    };
+    return { ok: false, reason: "That device isn't available anymore -- try again." };
   }
   if (res.status === 403) {
     return { ok: false, reason: "Starting playback needs Spotify Premium." };
