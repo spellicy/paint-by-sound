@@ -6,9 +6,9 @@ import {
   activatePlaybackElement,
   disconnectEmbeddedPlayer,
   ensureEmbeddedPlayer,
-  isThirdPartyIOSBrowser,
   type PlayerStatus,
 } from "../spotify/player";
+import { isIOS } from "../platform";
 
 interface SpotifyPickerProps {
   /** Called once a track has actually started playing on the user's active
@@ -32,22 +32,32 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>({ state: "connecting" });
   // Fixed for the life of the tab -- computed once rather than re-checked on
   // every render.
-  const [thirdPartyIOS] = useState(isThirdPartyIOSBrowser);
+  const [onIOS] = useState(isIOS);
 
   // Once connected, this tab becomes its own Spotify Connect device (the
   // Web Playback SDK) -- so hitting Play never needs Spotify already open
   // somewhere else. Initializing this here, as soon as the panel is in its
   // connected state, means the device is usually already ready by the time
   // a search finishes and the user picks a track.
+  //
+  // Skipped entirely on iOS: this same-device player is a dead end there
+  // either way -- non-Safari iOS browsers can't play DRM content in-page at
+  // all (Apple reserves that to Safari's own process), and even Safari's
+  // own copy can't be *heard back* by Listen live, since iOS forces mic
+  // echo cancellation on regardless of what this app requests (see
+  // audio/analyzer.ts) and that cancels out audio coming from the phone's
+  // own speaker. handlePlay below routes iOS through Spotify Connect's
+  // "whatever device is already active" flow instead, which sidesteps both
+  // problems by design -- it's not this phone playing the track at all.
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || onIOS) return;
     // A playback_error is a per-attempt failure (a buffering hiccup, the
     // Safari autoplay-lock case), not a sign the device dropped -- routed
     // into playState (the same per-click feedback channel Play already
     // uses) rather than the persistent playerStatus, so it doesn't get
     // stuck showing a stale error after a later attempt actually succeeds.
     ensureEmbeddedPlayer(setPlayerStatus, (message) => setPlayState({ ok: false, message }));
-  }, [connected]);
+  }, [connected, onIOS]);
 
   useEffect(() => {
     if (!query.trim()) return;
@@ -88,15 +98,19 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   if (!connected) {
     return (
       <div className="mt-3 space-y-2 border-t border-stone-800 pt-3">
-        <p className="text-xs text-stone-500">
-          Or search <strong className="font-medium text-stone-400">Spotify</strong> and
-          play a track right here (Premium required), then hit Listen live to
-          paint it.
-        </p>
-        {thirdPartyIOS && (
-          <p className="text-[10px] text-amber-500">
-            Heads up: on iPhone/iPad, in-page playback only works in Safari --
-            Apple blocks it in Chrome, Firefox, and other browsers here.
+        {onIOS ? (
+          <p className="text-xs text-stone-500">
+            Or search <strong className="font-medium text-stone-400">Spotify</strong> and
+            start a track on whatever device you already have Spotify open on
+            (another phone, a computer, a speaker) -- iPhone/iPad can't play
+            or capture it on this same device. Point this phone's mic at that
+            other source and hit Listen live.
+          </p>
+        ) : (
+          <p className="text-xs text-stone-500">
+            Or search <strong className="font-medium text-stone-400">Spotify</strong> and
+            play a track right here (Premium required), then hit Listen live to
+            paint it.
           </p>
         )}
         <button
@@ -110,12 +124,28 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
   }
 
   const handlePlay = async (track: SpotifyTrack) => {
-    // Must run synchronously, before any await below, so mobile browsers
-    // (and Safari) still count this as triggered directly by the click --
-    // see spotify/player.ts. A fetch()-triggered play command alone doesn't
-    // satisfy their autoplay policy, even from a click's own handler.
-    activatePlaybackElement();
     setPlayState(null);
+    if (onIOS) {
+      // No deviceId -- targets whatever Spotify session the user already
+      // has open elsewhere, since this phone can neither play nor capture
+      // it itself (see the effect above).
+      const result = await playTrackOnActiveDevice(track.uri);
+      if (result.ok) {
+        setPlayState({
+          ok: true,
+          message: "Playing on your other Spotify device -- point this phone's mic at it and hit Listen live.",
+        });
+        onTrackSelected(track);
+      } else {
+        setPlayState({ ok: false, message: result.reason });
+      }
+      return;
+    }
+    // Must run synchronously, before any await below, so Safari still
+    // counts this as triggered directly by the click -- see
+    // spotify/player.ts. A fetch()-triggered play command alone doesn't
+    // satisfy its autoplay policy, even from a click's own handler.
+    activatePlaybackElement();
     if (playerStatus.state !== "ready") {
       setPlayState({
         ok: false,
@@ -149,15 +179,10 @@ export function SpotifyPicker({ onTrackSelected }: SpotifyPickerProps) {
           Disconnect
         </button>
       </div>
-      {thirdPartyIOS && (
-        <p className="text-[10px] text-amber-500">
-          In-page playback needs Safari on iPhone/iPad -- Apple blocks it here.
-        </p>
-      )}
-      {playerStatus.state === "connecting" && (
+      {!onIOS && playerStatus.state === "connecting" && (
         <p className="text-[10px] text-stone-600">Connecting in-page player...</p>
       )}
-      {playerStatus.state === "error" && (
+      {!onIOS && playerStatus.state === "error" && (
         <p className="text-[10px] text-amber-500">{playerStatus.message}</p>
       )}
       <input

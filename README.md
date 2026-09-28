@@ -201,22 +201,27 @@ src/
   per deployment; see `src/spotify/config.ts`. Reconnecting is required
   after any change to `SPOTIFY_SCOPES`, since a token issued under the old
   scope list won't carry a newly-added one.
-- Safari's autoplay policy blocks the Web Playback SDK's internal audio
-  element until a genuine click unlocks it — every Play click calls
-  Spotify's documented `activateElement()`/`resume()` workaround for this
-  (`spotify/player.ts`), but Safari specifically (mobile and desktop) has
-  a known, currently unresolved gap in Spotify's own SDK where that
-  doesn't always take effect on the first click. If Play reports a
-  playback error, try it again.
-- On iPhone/iPad, the in-page Web Playback SDK only works in Safari itself.
-  Chrome, Firefox, Edge, and Opera on iOS are all required by Apple to embed
-  Safari's own WebKit engine, but Apple reserves full DRM/protected-content
-  playback — which Spotify's player needs — to Safari's own process, not to
-  a third-party app merely embedding it. The SDK fails there every time, not
-  just on the first click like the retry-able Safari quirk above; the app
-  detects this (`spotify/player.ts`'s `isThirdPartyIOSBrowser`) and says so
-  rather than implying a retry will help. Use Safari, or start the track via
-  Spotify Connect on another device instead.
+- On desktop and Android, the Spotify panel plays through an embedded Web
+  Playback SDK device, so a picked track starts right in this tab. Desktop
+  Safari's autoplay policy blocks that device's internal audio element until
+  a genuine click unlocks it — every Play click calls Spotify's documented
+  `activateElement()`/`resume()` workaround for this (`spotify/player.ts`),
+  but Safari specifically has a known, currently unresolved gap in Spotify's
+  own SDK where that doesn't always take effect on the first click. If Play
+  reports a playback error, try it again.
+- On iPhone/iPad, the Spotify panel skips the embedded player entirely and
+  plays through Spotify Connect on whatever device you already have Spotify
+  open on instead (`SpotifyPicker.tsx` checks `platform.ts`'s `isIOS()`).
+  That's not a fallback for a smaller bug — the embedded, same-device player
+  is a dead end on iOS regardless of browser: non-Safari iOS browsers can't
+  play DRM-protected content in-page at all (Apple reserves that capability
+  to Safari's own process, not to a third-party app merely embedding its
+  WebKit engine), and even Safari's own copy of it can't be *heard back* by
+  Listen live, since iOS forces mic echo cancellation on regardless of what
+  this app requests (see the next bullet) — it would cancel out the very
+  audio it's supposed to paint. Routing through Connect to a genuinely
+  separate device sidesteps both problems at once, since it's not this
+  phone playing the track either way.
 - Listen live disables the mic's echo cancellation and noise suppression
   (`audio/analyzer.ts`). Both are voice-call optimizations that, left on,
   actively suppress the very thing being painted whenever the source is

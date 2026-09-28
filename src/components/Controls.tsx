@@ -96,9 +96,10 @@ export function Controls({
           <p className="mt-1 text-xs leading-relaxed text-amber-500/90">
             On iPhone/iPad, play from a genuinely separate speaker or device
             &mdash; iOS forces echo cancellation on regardless of the source,
-            so music played through this same phone's own speaker (including
-            the in-page Spotify player above) gets filtered out as if it were
-            an echo, leaving only room noise.
+            so anything played through this same phone's own speaker gets
+            filtered out as if it were an echo, leaving only room noise. The
+            Spotify search below already accounts for this by playing on
+            another device rather than this one.
           </p>
         )}
         <SpotifyPicker onTrackSelected={onSpotifyTrackSelected} />

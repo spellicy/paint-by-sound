@@ -3,10 +3,17 @@
 // session on some other device (phone, desktop app) first. Still doesn't
 // expose raw audio (same DRM wall as regular Spotify playback), so
 // painting the result still means a capture step afterward (Listen live).
+//
+// Deliberately not used on iOS at all (see SpotifyPicker.tsx) -- it's a dead
+// end there either way: non-Safari iOS browsers can't play DRM content
+// in-page (Apple reserves that to Safari's own process), and even Safari's
+// copy can't be heard back by Listen live, since iOS forces mic echo
+// cancellation on regardless of what's requested (audio/analyzer.ts), which
+// cancels out audio coming from the phone's own speaker. iOS instead plays
+// through Spotify Connect on whatever device is already active elsewhere.
 
 import { getAccessToken } from "./auth";
 import { pauseOnActiveDevice } from "./api";
-import { isIOS } from "../platform";
 
 interface SpotifyPlayerInstance {
   connect(): Promise<boolean>;
@@ -58,22 +65,6 @@ function loadSdk(): Promise<void> {
   });
   return sdkLoadPromise;
 }
-
-/** Apple requires every iOS browser to embed its WebKit engine, but reserves
- * full DRM/EME protected-content playback -- which Spotify's Web Playback
- * SDK depends on -- to Safari's own first-party process. Chrome, Firefox,
- * Edge, and Opera on iOS are all third-party WKWebView wrappers, so they
- * never get that capability: the SDK's `playback_error` there is permanent,
- * not the retry-able autoplay-lock quirk real Safari has. No JS workaround
- * exists, so the UI needs to say that plainly instead of implying "try
- * again" on a failure that structurally never will succeed. */
-export function isThirdPartyIOSBrowser(): boolean {
-  const isThirdPartyWrapper = /CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
-  return isIOS() && isThirdPartyWrapper;
-}
-
-const THIRD_PARTY_IOS_MESSAGE =
-  "Spotify can't play in-page in this browser on iPhone/iPad -- Apple reserves that to Safari itself. Open this page in Safari, or start the track in the Spotify app on another device first.";
 
 export type PlayerStatus =
   | { state: "connecting" }
@@ -137,7 +128,7 @@ export function ensureEmbeddedPlayer(
         onStatus({ state: "error", message: "The in-page player needs Spotify Premium." });
       });
       player.addListener("playback_error", ({ message }) => {
-        onPlaybackError(isThirdPartyIOSBrowser() ? THIRD_PARTY_IOS_MESSAGE : message || "Playback error.");
+        onPlaybackError(message || "Playback error.");
       });
 
       void player.connect();
@@ -157,15 +148,16 @@ export function disconnectEmbeddedPlayer(): void {
   readyDeviceId = null;
 }
 
-/** Mobile browsers (and, per Spotify's own SDK, Safari even on desktop)
- * block the player's internal audio element until a genuine user gesture
- * unlocks it -- a fetch()-triggered play command alone isn't enough, even
- * though it originated from a click. Call this synchronously at the very
- * top of that same click handler, before any `await`, so the browser still
- * counts it as gesture-triggered. This is Spotify's own documented
- * workaround; Safari specifically has a known, currently-unresolved gap in
- * their SDK where even this doesn't always start audio on the first
- * click -- so it helps, but isn't a guaranteed fix there. */
+/** Mobile browsers (Android; iOS never reaches this code -- see the note at
+ * the top of this file) and, per Spotify's own SDK, desktop Safari, block
+ * the player's internal audio element until a genuine user gesture unlocks
+ * it -- a fetch()-triggered play command alone isn't enough, even though it
+ * originated from a click. Call this synchronously at the very top of that
+ * same click handler, before any `await`, so the browser still counts it as
+ * gesture-triggered. This is Spotify's own documented workaround; Safari
+ * specifically has a known, currently-unresolved gap in their SDK where
+ * even this doesn't always start audio on the first click -- so it helps,
+ * but isn't a guaranteed fix there. */
 export function activatePlaybackElement(): void {
   if (!playerInstance) return;
   void playerInstance.activateElement();
