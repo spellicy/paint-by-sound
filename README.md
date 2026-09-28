@@ -224,7 +224,17 @@ src/
   embedded Spotify player, or any source played on a laptop's built-in
   speakers): echo cancellation specifically models "what my speaker is
   outputting" and subtracts it from the mic input, so the song gets
-  filtered out and mostly room noise passes through instead.
+  filtered out and mostly room noise passes through instead. This genuinely
+  fixes it on desktop and Android, but **not** on iOS: WebKit has a
+  long-standing, still-open bug
+  ([webkit.org/b/179411](https://bugs.webkit.org/show_bug.cgi?id=179411))
+  where `echoCancellation` has no effect at all on iPhone/iPad, in every
+  iOS browser (Safari, Chrome, etc. — they're all WebKit underneath). There's
+  no web API workaround; on iOS, playing from a genuinely separate physical
+  speaker/device (rather than the same phone's own speaker) is the only
+  reliable fix, since then there's no self-generated reference signal for
+  iOS's forced-on echo cancellation to strip out. The app surfaces this
+  directly in the UI (`Controls.tsx`) when it detects iOS.
 - On iPhone, Safari pauses other apps' audio the moment a page activates the
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same

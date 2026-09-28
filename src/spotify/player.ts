@@ -5,6 +5,7 @@
 // painting the result still means a capture step afterward (Listen live).
 
 import { getAccessToken } from "./auth";
+import { isIOS } from "../platform";
 
 interface SpotifyPlayerInstance {
   connect(): Promise<boolean>;
@@ -67,10 +68,8 @@ function loadSdk(): Promise<void> {
  * exists, so the UI needs to say that plainly instead of implying "try
  * again" on a failure that structurally never will succeed. */
 export function isThirdPartyIOSBrowser(): boolean {
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  const isThirdPartyWrapper = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
-  return isIOS && isThirdPartyWrapper;
+  const isThirdPartyWrapper = /CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+  return isIOS() && isThirdPartyWrapper;
 }
 
 const THIRD_PARTY_IOS_MESSAGE =

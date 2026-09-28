@@ -1,9 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { PAINT_STYLES } from "../paint/types";
 import type { PaintStyleId } from "../paint/types";
 import type { SourceMode } from "../hooks/usePaintBySound";
 import { SpotifyPicker } from "./SpotifyPicker";
 import type { SpotifyTrack } from "../spotify/api";
+import { isIOS } from "../platform";
 
 interface ControlsProps {
   styleId: PaintStyleId;
@@ -31,6 +32,8 @@ export function Controls({
   onSave,
 }: ControlsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Fixed for the life of the tab.
+  const [onIOS] = useState(isIOS);
 
   return (
     <div className="space-y-5">
@@ -89,6 +92,15 @@ export function Controls({
           speaker, another device, or the room. Painting starts the moment
           it hears sound, no extra step.
         </p>
+        {onIOS && (
+          <p className="mt-1 text-xs leading-relaxed text-amber-500/90">
+            On iPhone/iPad, play from a genuinely separate speaker or device
+            &mdash; iOS forces echo cancellation on regardless of the source,
+            so music played through this same phone's own speaker (including
+            the in-page Spotify player above) gets filtered out as if it were
+            an echo, leaving only room noise.
+          </p>
+        )}
         <SpotifyPicker onTrackSelected={onSpotifyTrackSelected} />
       </div>
 

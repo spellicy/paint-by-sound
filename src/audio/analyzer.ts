@@ -105,6 +105,17 @@ export class SoundAnalyzer {
     // passes through mostly whatever doesn't match that model -- i.e. room
     // noise. Noise suppression is similarly tuned to strip anything that
     // doesn't look like speech, which includes music.
+    //
+    // This genuinely fixes same-device playback on desktop and Android --
+    // but not on iOS. WebKit has a long-standing bug (still open as of this
+    // writing: https://bugs.webkit.org/show_bug.cgi?id=179411) where
+    // echoCancellation has no effect at all on iPhone/iPad regardless of
+    // what's requested here, in every iOS browser (they're all WebKit
+    // underneath -- see platform.ts). There's no JS-level workaround for
+    // that; on iOS the only reliable fix is playing from a genuinely
+    // separate physical device/speaker rather than the same phone's own
+    // speaker, so there's no self-generated reference signal for iOS's
+    // forced-on echo cancellation to match and strip out.
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false },
     });
