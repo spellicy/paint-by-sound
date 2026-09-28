@@ -25,9 +25,9 @@ involved.
 
 All three ways of getting audio in live together in one **Sound source**
 card. Alongside Listen live and Upload a file, an **Audius** option lets
-you search Audius's open, independent-artist catalog by name and play a
-track directly into the analyzer -- no login, no separate device, no extra
-"now hit Listen live" step. This app looked at Spotify first, but every
+you search Audius's open, independent-artist catalog by name (or browse by
+genre) and play a track directly into the analyzer -- no login, no separate
+device, no extra "now hit Listen live" step. This app looked at Spotify first, but every
 major licensed streaming catalog (Spotify, Apple Music, Tidal, Amazon
 Music, YouTube Music) is DRM-protected by label licensing requirement and
 deliberately exposes no raw audio to a web page, no matter how it's

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { searchTracks, type AudiusTrack } from "../audius/api";
+import { listGenres, searchTracks, tracksByGenre, type AudiusTrack } from "../audius/api";
 
 interface AudiusPickerProps {
   /** Called when a track is picked -- starts playing it directly through
@@ -20,9 +20,17 @@ interface AudiusPickerProps {
  * identically on every platform including iOS. */
 export function AudiusPicker({ onTrackSelected }: AudiusPickerProps) {
   const [query, setQuery] = useState("");
+  const [genres, setGenres] = useState<string[]>([]);
+  const [genre, setGenre] = useState("");
   const [results, setResults] = useState<AudiusTrack[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Populated from real trending-track data rather than hardcoded -- see
+  // listGenres's comment in audius/api.ts.
+  useEffect(() => {
+    void listGenres().then(setGenres);
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) return;
@@ -42,10 +50,30 @@ export function AudiusPicker({ onTrackSelected }: AudiusPickerProps) {
 
   const handleQueryChange = (value: string) => {
     setQuery(value);
+    setGenre("");
     if (!value.trim()) {
       setResults([]);
       setSearchError(null);
     }
+  };
+
+  const handleGenreChange = (value: string) => {
+    setGenre(value);
+    setQuery("");
+    if (!value) {
+      setResults([]);
+      setSearchError(null);
+      return;
+    }
+    tracksByGenre(value)
+      .then((tracks) => {
+        setResults(tracks);
+        setSearchError(null);
+      })
+      .catch((e) => {
+        setResults([]);
+        setSearchError(e instanceof Error ? e.message : "Could not load that genre.");
+      });
   };
 
   const handlePlay = (track: AudiusTrack) => {
@@ -57,16 +85,32 @@ export function AudiusPicker({ onTrackSelected }: AudiusPickerProps) {
     <div className="mt-3 space-y-2 border-t border-stone-800 pt-3">
       <p className="text-xs font-medium text-stone-400">Play from Audius</p>
       <p className="text-xs text-stone-500">
-        Search Audius's open, independent-artist catalog and play a track
-        right here &mdash; it paints immediately, the same way on every
-        device.
+        Search Audius's open, independent-artist catalog by name, or browse
+        by genre, and play a track right here &mdash; it paints immediately,
+        the same way on every device.
       </p>
-      <input
-        value={query}
-        onChange={(e) => handleQueryChange(e.target.value)}
-        placeholder="Search for a song..."
-        className="w-full rounded-md border border-stone-800 bg-stone-900 px-3 py-1.5 text-sm text-stone-200 placeholder:text-stone-600"
-      />
+      <div className="flex gap-2">
+        <input
+          value={query}
+          onChange={(e) => handleQueryChange(e.target.value)}
+          placeholder="Search for a song..."
+          className="min-w-0 flex-1 rounded-md border border-stone-800 bg-stone-900 px-3 py-1.5 text-sm text-stone-200 placeholder:text-stone-600"
+        />
+        {genres.length > 0 && (
+          <select
+            value={genre}
+            onChange={(e) => handleGenreChange(e.target.value)}
+            className="flex-none rounded-md border border-stone-800 bg-stone-900 px-2 py-1.5 text-sm text-stone-200"
+          >
+            <option value="">Browse by genre&hellip;</option>
+            {genres.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
       {searchError && <p className="text-xs text-red-400">{searchError}</p>}
       {results.length > 0 && (
         <ul className="space-y-1">
