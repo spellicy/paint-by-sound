@@ -217,11 +217,14 @@ src/
   detects this (`spotify/player.ts`'s `isThirdPartyIOSBrowser`) and says so
   rather than implying a retry will help. Use Safari, or start the track via
   Spotify Connect on another device instead.
-- On iPhone, whether Listen live's microphone still pauses Spotify audio
-  played through the in-page player (as opposed to a genuinely separate
-  app, the documented case below) hasn't been verified — it may or may not
-  behave differently since it's the same page's own audio rather than a
-  background app's.
+- Listen live disables the mic's echo cancellation and noise suppression
+  (`audio/analyzer.ts`). Both are voice-call optimizations that, left on,
+  actively suppress the very thing being painted whenever the source is
+  playing through the same device's own speaker (the common case with the
+  embedded Spotify player, or any source played on a laptop's built-in
+  speakers): echo cancellation specifically models "what my speaker is
+  outputting" and subtracts it from the mic input, so the song gets
+  filtered out and mostly room noise passes through instead.
 - On iPhone, Safari pauses other apps' audio the moment a page activates the
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same

@@ -85,15 +85,29 @@ export class SoundAnalyzer {
   async startMic(): Promise<void> {
     this.stop();
     await this.ctx.resume();
-    // Plain `audio: true` rather than overriding the processing constraints:
-    // disabling autoGainControl was tried as a mitigation for iOS pausing
-    // other apps' audio on mic activation, but it doesn't reliably help with
-    // that (websites have no API for the "mix with others" AVAudioSession
-    // category native apps can request) while it does reliably leave the
-    // iPhone mic too quiet to pick up ambient/speaker audio, reading as
-    // silence below the analyzer's noise gate and leaving the canvas blank
-    // even with permission granted and audio playing nearby.
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // autoGainControl is left at its default (true): disabling it was tried
+    // as a mitigation for iOS pausing other apps' audio on mic activation,
+    // but it doesn't reliably help with that (websites have no API for the
+    // "mix with others" AVAudioSession category native apps can request)
+    // while it does reliably leave the iPhone mic too quiet to pick up
+    // ambient/speaker audio, reading as silence below the analyzer's noise
+    // gate and leaving the canvas blank even with audio playing nearby.
+    //
+    // echoCancellation and noiseSuppression, though, are explicitly turned
+    // off -- both are voice-call optimizations that actively work against
+    // this app's actual use case. Echo cancellation in particular builds a
+    // model of "what my own speaker is currently outputting" and subtracts
+    // it from the mic input so a call partner doesn't hear themselves back;
+    // when the music being painted is playing through this same device's
+    // speaker (the common case with the embedded Spotify player, or any
+    // source played on a laptop's own speakers) that's exactly the signal
+    // this app wants to analyze, so leaving it on suppresses the song and
+    // passes through mostly whatever doesn't match that model -- i.e. room
+    // noise. Noise suppression is similarly tuned to strip anything that
+    // doesn't look like speech, which includes music.
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false },
+    });
     const src = this.ctx.createMediaStreamSource(stream);
     src.connect(this.analyser);
     // Intentionally not connected to destination -- avoid feedback.
