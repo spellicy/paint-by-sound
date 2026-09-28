@@ -42,8 +42,14 @@ export function disconnect() {
 export async function beginLogin(): Promise<void> {
   const verifier = randomString(64);
   const state = randomString(16);
-  sessionStorage.setItem(VERIFIER_KEY, verifier);
-  sessionStorage.setItem(STATE_KEY, state);
+  // localStorage, not sessionStorage: this needs to survive a full
+  // top-level round trip to accounts.spotify.com and back, and iOS Safari
+  // has been observed dropping sessionStorage across that gap -- it can
+  // discard and reload a backgrounded tab under memory pressure while the
+  // user is on Spotify's consent screen, which wipes sessionStorage (an
+  // in-memory-per-tab store) but not localStorage (written to disk).
+  localStorage.setItem(VERIFIER_KEY, verifier);
+  localStorage.setItem(STATE_KEY, state);
 
   const challenge = await codeChallengeFromVerifier(verifier);
   const params = new URLSearchParams({
@@ -61,17 +67,21 @@ export async function beginLogin(): Promise<void> {
 /** Call once on app load. If the URL carries a Spotify redirect (`code` +
  * `state`), exchanges the code for tokens and strips those query params
  * back off the URL so a refresh doesn't try to redeem the same code twice.
- * A no-op on any normal page load. */
-export async function completeLoginIfRedirected(): Promise<void> {
+ * A no-op (`{ ok: true }`) on any normal page load without one.
+ *
+ * Returns a reason on failure rather than swallowing it: every step here
+ * used to fail silently, so a broken login just looked like "Connect
+ * Spotify" not doing anything, with no way to tell why from the outside. */
+export async function completeLoginIfRedirected(): Promise<{ ok: true } | { ok: false; reason: string }> {
   const url = new URL(window.location.href);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  if (!code) return;
+  if (!code) return { ok: true };
 
-  const expectedState = sessionStorage.getItem(STATE_KEY);
-  const verifier = sessionStorage.getItem(VERIFIER_KEY);
-  sessionStorage.removeItem(STATE_KEY);
-  sessionStorage.removeItem(VERIFIER_KEY);
+  const expectedState = localStorage.getItem(STATE_KEY);
+  const verifier = localStorage.getItem(VERIFIER_KEY);
+  localStorage.removeItem(STATE_KEY);
+  localStorage.removeItem(VERIFIER_KEY);
 
   // Always scrub the OAuth params off the visible URL, even if something
   // below fails -- an error shouldn't leave a redeemable `code` sitting in
@@ -80,7 +90,15 @@ export async function completeLoginIfRedirected(): Promise<void> {
   url.searchParams.delete("state");
   window.history.replaceState({}, "", url.toString());
 
-  if (!verifier || !state || state !== expectedState) return;
+  if (!verifier || !state) {
+    return {
+      ok: false,
+      reason: "Spotify sign-in didn't complete (lost the in-progress login) -- try Connect Spotify again.",
+    };
+  }
+  if (state !== expectedState) {
+    return { ok: false, reason: "Spotify sign-in failed a security check -- try Connect Spotify again." };
+  }
 
   const body = new URLSearchParams({
     grant_type: "authorization_code",
@@ -94,13 +112,16 @@ export async function completeLoginIfRedirected(): Promise<void> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!res.ok) return;
+  if (!res.ok) {
+    return { ok: false, reason: `Spotify sign-in failed (${res.status}) -- try Connect Spotify again.` };
+  }
   const json = await res.json();
   saveTokens({
     accessToken: json.access_token,
     refreshToken: json.refresh_token,
     expiresAt: Date.now() + json.expires_in * 1000,
   });
+  return { ok: true };
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<StoredTokens | null> {

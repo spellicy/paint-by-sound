@@ -45,9 +45,14 @@ export function usePaintBySound(canvasRef: React.RefObject<HTMLCanvasElement | n
   // Picks the OAuth flow back up if Spotify just redirected here with
   // `?code=...` -- a no-op on any other page load. Runs once regardless of
   // whether Spotify is configured; `completeLoginIfRedirected` itself is a
-  // no-op when there's no `code` in the URL.
+  // no-op when there's no `code` in the URL. Surfaces a failure (e.g. the
+  // in-progress login getting lost) through the same error banner as
+  // mic/file errors -- this used to fail silently, which on Safari looked
+  // like tapping "Connect Spotify" simply doing nothing.
   useEffect(() => {
-    void completeLoginIfRedirected();
+    void completeLoginIfRedirected().then((result) => {
+      if (!result.ok) setError(result.reason);
+    });
   }, []);
 
   useEffect(() => {
