@@ -180,7 +180,6 @@ src/
   gallery/storage.ts      IndexedDB-backed exhibit catalog
   gallery/saveImage.ts    Web Share API save, with anchor-download fallback
   audius/api.ts           track search + stream URLs (no auth, no API key)
-  platform.ts             isIOS() -- iPhone/iPad detection, keyed on WebKit quirks
   hooks/usePaintBySound.ts  wires audio + paint engine + theme into React state
   components/             Controls (incl. AudiusPicker), StatusBar, ConceptPanel, Gallery
 ```
@@ -218,8 +217,7 @@ src/
   no web API workaround; on iOS, playing from a genuinely separate physical
   speaker/device (rather than the same phone's own speaker) is the only
   reliable fix, since then there's no self-generated reference signal for
-  iOS's forced-on echo cancellation to strip out. The app surfaces this
-  directly in the UI (`Controls.tsx`) when it detects iOS.
+  iOS's forced-on echo cancellation to strip out.
 - On iPhone, Safari pauses other apps' audio the moment a page activates the
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same
