@@ -157,11 +157,13 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
   },
   mondrian: {
     // Just the three Neoplastic primaries -- red, yellow, blue -- snapped
-    // hard from whatever hue the note suggests. The cell renderer
-    // (PaintEngine.renderMondrianCell) actually fills with its own fixed,
-    // flat hex swatches rather than this continuous hsl output, so these
-    // bounds mostly matter for the handful of places (e.g. motif-underlay
-    // seeding) that read the stylized color generically before dispatch.
+    // hard from whatever hue the note suggests, feeding directly into the
+    // cell renderer (PaintEngine.renderMondrianCell), which nudges this
+    // further away from whatever neighboring cells already show (the same
+    // idea Albers's pickDistinctCellHue uses) but otherwise paints this
+    // hue flat, with no gradient or blur -- the only painter here whose
+    // "signature palette" really is just three colors, not an anchor set
+    // pulled toward.
     signatureHues: [5, 50, 220],
     huePull: 0.9,
     saturation: [55, 85],

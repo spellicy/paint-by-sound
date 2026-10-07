@@ -114,16 +114,17 @@ interface MondrianCell {
   xEnd: number;
   yStart: number;
   yEnd: number;
-  /** Most cells are permanently reserved to stay bare canvas -- his
-   * compositions read as mostly white, not a fully-tiled color grid. */
-  colorable: boolean;
   color: MondrianColorKey | null;
 }
 
-/** Flat, fixed hex swatches -- no gradient, no per-note jitter, the
- * opposite of every other painter's hand-mixed, continuously-varying
- * color. Real Neoplastic primaries: a true vivid red/yellow/blue plus the
- * near-black used for both the grid lines and occasional black cells. */
+/** Flat, fixed hex swatches -- no gradient, no per-note variation in
+ * saturation/lightness, the opposite of every other painter's hand-mixed,
+ * continuously-varying color. Real Neoplastic primaries: a true vivid
+ * red/yellow/blue plus the near-black used for both the grid lines and
+ * occasional black cells. Repeating the same primary across several cells
+ * is normal and authentic -- real Mondrian compositions do this
+ * constantly -- so, unlike every other persistent-cell family here, there's
+ * deliberately no logic nudging a cell's color away from its neighbors'. */
 const MONDRIAN_SWATCHES: Record<MondrianColorKey, string> = {
   red: "#d7262b",
   yellow: "#f4c20d",
@@ -928,9 +929,8 @@ export class PaintEngine {
    * region, so cells stay reasonably balanced rather than one giant
    * leftover beside a cluster of slivers), each split landing well off
    * center (28%-72%) for his characteristic unevenness rather than a neat
-   * checkerboard. Only a minority of the resulting cells are marked
-   * colorable -- the rest stay permanently reserved as bare canvas, since
-   * his compositions read as mostly white space, not a fully-tiled grid. */
+   * checkerboard. Every cell is paintable -- pitch register just picks
+   * which one a note lands in, same as Albers's cells. */
   private ensureMondrianCells() {
     if (this.mondrianCells.length) return;
     const width = this.logicalWidth;
@@ -973,18 +973,7 @@ export class PaintEngine {
       }
     }
 
-    const colorableCount = Math.max(3, Math.round(rects.length * 0.4));
-    const order = rects.map((_, i) => i);
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(this.rand() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    const colorable = new Set(order.slice(0, colorableCount));
-    this.mondrianCells = rects.map((r, i) => ({
-      ...r,
-      colorable: colorable.has(i),
-      color: null,
-    }));
+    this.mondrianCells = rects.map((r) => ({ ...r, color: null }));
   }
 
   private updateMondrianCursor(frequency: number): MondrianCell {
@@ -1016,15 +1005,21 @@ export class PaintEngine {
     this.ctx.restore();
   }
 
-  /** Snap a raw hue to the nearest Neoplastic primary, with a flat chance
-   * of landing on black instead (he used solid black cells too, not just
-   * grid lines) that rises further on confidently minor-key material --
-   * the same "ease toward something starker on minor" idea de Kooning's
-   * palette uses, applied to cell choice here instead of saturation. */
-  private pickMondrianColor(hue: number): MondrianColorKey {
+  /** Snaps the note's own (already palette-pulled toward red/yellow/blue --
+   * see PALETTES.mondrian's huePull: 0.9) hue to whichever of the three
+   * Neoplastic primaries it's nearest to -- no further nudging away from
+   * neighboring cells, deliberately: real Mondrian compositions repeat the
+   * same primary across several blocks constantly, so forcing every cell
+   * distinct (the way pickDistinctCellHue does for Albers) would actively
+   * fight his actual technique, not reproduce it. A flat chance of landing
+   * on black instead (he used solid black cells too, not just grid lines)
+   * rises further on confidently minor-key material, the same "ease toward
+   * something starker on minor" idea de Kooning's palette uses, applied to
+   * cell choice here instead of saturation. */
+  private pickMondrianCellColor(hue: number): MondrianColorKey {
     const key = this.keyEstimate;
-    const minorBoost = key.mode === "minor" ? key.confidence * 0.18 : 0;
-    if (this.rand() < 0.1 + minorBoost) return "black";
+    const blackChance = 0.08 + (key.mode === "minor" ? key.confidence * 0.18 : 0);
+    if (this.rand() < blackChance) return "black";
     const anchors: Array<[MondrianColorKey, number]> = [
       ["red", 5],
       ["yellow", 50],
@@ -1042,20 +1037,15 @@ export class PaintEngine {
     return best;
   }
 
-  /** Flat, hard-edged fills only -- no gradient, no blur, no per-note
-   * jitter, the opposite of every other family's hand-painted look. A
-   * non-colorable cell never gets touched (see ensureMondrianCells) --
-   * only the grid redraws, so bare canvas really does stay bare. Like
-   * Albers's cells (and Rothko's bands, Louis's stripes), a colored cell
-   * fully repaints -- not builds up -- on every hit, in a persistent color
-   * that only occasionally flips, rather than a fresh pick every time. */
+  /** Flat, hard-edged fills only -- fixed swatches, no gradient, no blur,
+   * no per-note variation in saturation/lightness, the opposite of every
+   * other family's hand-painted look. Like Albers's cells (and Rothko's
+   * bands, Louis's stripes), a cell fully repaints -- not builds up -- on
+   * every hit, in a persistent color that only occasionally flips, rather
+   * than a fresh pick every time. */
   private renderMondrianCell(cell: MondrianCell, rawColor: NoteColor) {
-    if (!cell.colorable) {
-      this.drawMondrianGrid();
-      return;
-    }
-    if (cell.color === null || this.rand() < 0.04) {
-      cell.color = this.pickMondrianColor(rawColor.hue);
+    if (cell.color === null || this.rand() < 0.05) {
+      cell.color = this.pickMondrianCellColor(rawColor.hue);
     }
     const key = this.keyEstimate;
     const shade = key.mode === "minor" ? 1 - key.confidence * 0.3 : 1;
