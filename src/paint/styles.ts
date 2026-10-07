@@ -650,6 +650,12 @@ function miroEye(ctx: CanvasRenderingContext2D, s: number, rand: () => number) {
 // here rather than implemented as an ordinary StyleRenderer.
 const albers: StyleRenderer = () => {};
 
+// Mondrian (an asymmetric black-ruled grid of mostly-white cells with a
+// few flat primary fills) is likewise rendered directly by
+// PaintEngine.renderMondrianCell -- same reason as Rothko, Louis, and
+// Albers above.
+const mondrian: StyleRenderer = () => {};
+
 const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   rothko,
   pollock,
@@ -662,6 +668,7 @@ const STYLE_RENDERERS: Record<PaintStyleId, StyleRenderer> = {
   marden,
   miro,
   albers,
+  mondrian,
 };
 
 export function renderStroke(styleId: PaintStyleId, s: StrokeContext) {

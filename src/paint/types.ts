@@ -12,7 +12,8 @@ export type PaintStyleId =
   | "martin"
   | "marden"
   | "miro"
-  | "albers";
+  | "albers"
+  | "mondrian";
 
 export interface PaintStyleInfo {
   id: PaintStyleId;
@@ -76,6 +77,11 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
     label: "Albers",
     blurb: "A persistent 4x4 grid of nested-square studies, tiled like a salon hang.",
   },
+  {
+    id: "mondrian",
+    label: "Mondrian",
+    blurb: "An asymmetric black-ruled grid, mostly bare, with a few flat primary blocks.",
+  },
 ];
 
 /** Style groups with fundamentally different composition strategies. */
@@ -96,6 +102,15 @@ export const STRIPE_STYLES: PaintStyleId[] = ["louis"];
  * occasionally shifts, echoing how Rothko's bands and Louis's stripes hold
  * a color across many hits rather than reshuffling on every note. */
 export const MOSAIC_STYLES: PaintStyleId[] = ["albers"];
+/** Mondrian: a persistent, asymmetric black-ruled grid built once per piece
+ * (like Albers's cells, but an irregular Neoplastic partition rather than a
+ * fixed 4x4) -- pitch register selects which cell a note belongs to, but
+ * most cells are permanently reserved to stay bare canvas (his compositions
+ * read as mostly white), and only the minority marked colorable ever get a
+ * flat, hard-edged primary fill. The opposite of every other family here:
+ * no gradient, no blur, no per-stroke jitter -- a note either flips a cell
+ * between flat red/yellow/blue/black or does nothing. */
+export const NEOPLASTIC_STYLES: PaintStyleId[] = ["mondrian"];
 
 /** Simulated position of the robotic arm's brush head on the canvas. */
 export interface ArmCursor {

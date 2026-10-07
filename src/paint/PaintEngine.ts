@@ -12,6 +12,7 @@ import {
   FOCAL_STYLES,
   GRID_STYLES,
   MOSAIC_STYLES,
+  NEOPLASTIC_STYLES,
   SPARSE_STYLES,
   STRIPE_STYLES,
   type ArmCursor,
@@ -106,6 +107,30 @@ interface AlbersCell {
   hue: number | null;
 }
 
+type MondrianColorKey = "red" | "yellow" | "blue" | "black";
+
+interface MondrianCell {
+  xStart: number;
+  xEnd: number;
+  yStart: number;
+  yEnd: number;
+  /** Most cells are permanently reserved to stay bare canvas -- his
+   * compositions read as mostly white, not a fully-tiled color grid. */
+  colorable: boolean;
+  color: MondrianColorKey | null;
+}
+
+/** Flat, fixed hex swatches -- no gradient, no per-note jitter, the
+ * opposite of every other painter's hand-mixed, continuously-varying
+ * color. Real Neoplastic primaries: a true vivid red/yellow/blue plus the
+ * near-black used for both the grid lines and occasional black cells. */
+const MONDRIAN_SWATCHES: Record<MondrianColorKey, string> = {
+  red: "#d7262b",
+  yellow: "#f4c20d",
+  blue: "#1c4396",
+  black: "#141414",
+};
+
 export interface PaintEngineOptions {
   canvas: HTMLCanvasElement;
   styleId: PaintStyleId;
@@ -128,6 +153,7 @@ export class PaintEngine {
   private rothkoBands: RothkoBand[] = [];
   private louisStripes: LouisStripe[] = [];
   private albersCells: AlbersCell[] = [];
+  private mondrianCells: MondrianCell[] = [];
   private rand: () => number;
   private phraseTracker = new PhraseTracker();
   private lastWashAt = -Infinity;
@@ -897,6 +923,149 @@ export class PaintEngine {
     return hue;
   }
 
+  /** Mondrian: a persistent, asymmetric black-ruled grid built once per
+   * piece via recursive binary splitting (always the current largest
+   * region, so cells stay reasonably balanced rather than one giant
+   * leftover beside a cluster of slivers), each split landing well off
+   * center (28%-72%) for his characteristic unevenness rather than a neat
+   * checkerboard. Only a minority of the resulting cells are marked
+   * colorable -- the rest stay permanently reserved as bare canvas, since
+   * his compositions read as mostly white space, not a fully-tiled grid. */
+  private ensureMondrianCells() {
+    if (this.mondrianCells.length) return;
+    const width = this.logicalWidth;
+    const height = this.logicalHeight;
+    const margin = Math.min(width, height) * 0.02;
+
+    interface Rect {
+      xStart: number;
+      xEnd: number;
+      yStart: number;
+      yEnd: number;
+    }
+    const rects: Rect[] = [
+      { xStart: margin, xEnd: width - margin, yStart: margin, yEnd: height - margin },
+    ];
+    const targetSplits = 7 + Math.floor(this.rand() * 4); // -> 8-11 leaf cells
+    for (let i = 0; i < targetSplits; i++) {
+      let idx = 0;
+      let bestArea = -Infinity;
+      rects.forEach((r, j) => {
+        const area = (r.xEnd - r.xStart) * (r.yEnd - r.yStart);
+        if (area > bestArea) {
+          bestArea = area;
+          idx = j;
+        }
+      });
+      const r = rects[idx];
+      const w = r.xEnd - r.xStart;
+      const h = r.yEnd - r.yStart;
+      // Split whichever axis is already longer more often than not, so a
+      // very wide or very tall leftover region tends to get squared off
+      // rather than sliced along its already-short axis.
+      const vertical = w > h ? this.rand() < 0.65 : this.rand() < 0.35;
+      if (vertical) {
+        const at = r.xStart + w * (0.28 + this.rand() * 0.44);
+        rects.splice(idx, 1, { ...r, xEnd: at }, { ...r, xStart: at });
+      } else {
+        const at = r.yStart + h * (0.28 + this.rand() * 0.44);
+        rects.splice(idx, 1, { ...r, yEnd: at }, { ...r, yStart: at });
+      }
+    }
+
+    const colorableCount = Math.max(3, Math.round(rects.length * 0.4));
+    const order = rects.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rand() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const colorable = new Set(order.slice(0, colorableCount));
+    this.mondrianCells = rects.map((r, i) => ({
+      ...r,
+      colorable: colorable.has(i),
+      color: null,
+    }));
+  }
+
+  private updateMondrianCursor(frequency: number): MondrianCell {
+    this.ensureMondrianCells();
+    const count = this.mondrianCells.length;
+    let index = Math.floor(count / 2);
+    if (frequency > 0) {
+      const midi = 69 + 12 * Math.log2(frequency / 440);
+      const norm = clamp((midi - 42) / 46, 0, 1);
+      index = clamp(Math.floor((1 - norm) * count), 0, count - 1);
+    }
+    const cell = this.mondrianCells[index];
+    this.cursor.x = (cell.xStart + cell.xEnd) / 2;
+    this.cursor.y = (cell.yStart + cell.yEnd) / 2;
+    return cell;
+  }
+
+  /** The thick black grid is redrawn on top after every fill (cheap -- a
+   * handful of strokeRect calls) rather than drawn once underneath, so a
+   * later cell fill can never paint over a shared border. */
+  private drawMondrianGrid() {
+    const unit = Math.min(this.logicalWidth, this.logicalHeight);
+    this.ctx.save();
+    this.ctx.strokeStyle = MONDRIAN_SWATCHES.black;
+    this.ctx.lineWidth = unit * 0.012;
+    for (const cell of this.mondrianCells) {
+      this.ctx.strokeRect(cell.xStart, cell.yStart, cell.xEnd - cell.xStart, cell.yEnd - cell.yStart);
+    }
+    this.ctx.restore();
+  }
+
+  /** Snap a raw hue to the nearest Neoplastic primary, with a flat chance
+   * of landing on black instead (he used solid black cells too, not just
+   * grid lines) that rises further on confidently minor-key material --
+   * the same "ease toward something starker on minor" idea de Kooning's
+   * palette uses, applied to cell choice here instead of saturation. */
+  private pickMondrianColor(hue: number): MondrianColorKey {
+    const key = this.keyEstimate;
+    const minorBoost = key.mode === "minor" ? key.confidence * 0.18 : 0;
+    if (this.rand() < 0.1 + minorBoost) return "black";
+    const anchors: Array<[MondrianColorKey, number]> = [
+      ["red", 5],
+      ["yellow", 50],
+      ["blue", 220],
+    ];
+    let best: MondrianColorKey = "red";
+    let bestDist = Infinity;
+    for (const [name, h] of anchors) {
+      const d = Math.abs(hueDistanceSigned(hue, h));
+      if (d < bestDist) {
+        bestDist = d;
+        best = name;
+      }
+    }
+    return best;
+  }
+
+  /** Flat, hard-edged fills only -- no gradient, no blur, no per-note
+   * jitter, the opposite of every other family's hand-painted look. A
+   * non-colorable cell never gets touched (see ensureMondrianCells) --
+   * only the grid redraws, so bare canvas really does stay bare. Like
+   * Albers's cells (and Rothko's bands, Louis's stripes), a colored cell
+   * fully repaints -- not builds up -- on every hit, in a persistent color
+   * that only occasionally flips, rather than a fresh pick every time. */
+  private renderMondrianCell(cell: MondrianCell, rawColor: NoteColor) {
+    if (!cell.colorable) {
+      this.drawMondrianGrid();
+      return;
+    }
+    if (cell.color === null || this.rand() < 0.04) {
+      cell.color = this.pickMondrianColor(rawColor.hue);
+    }
+    const key = this.keyEstimate;
+    const shade = key.mode === "minor" ? 1 - key.confidence * 0.3 : 1;
+    this.ctx.save();
+    this.ctx.fillStyle = shadeHex(MONDRIAN_SWATCHES[cell.color], shade);
+    this.ctx.fillRect(cell.xStart, cell.yStart, cell.xEnd - cell.xStart, cell.yEnd - cell.yStart);
+    this.ctx.restore();
+    this.drawMondrianGrid();
+  }
+
   /** A subject read from the title/lyrics (e.g. "seaside" -> horizon +
    * waves) gets blocked in once, early in the piece, in the current
    * painter's own hand -- the same points handed to Rothko become a color-
@@ -934,6 +1103,8 @@ export class PaintEngine {
     if (isStripe) this.ensureLouisStripes();
     const isMosaic = MOSAIC_STYLES.includes(this.styleId);
     if (isMosaic) this.ensureAlbersCells();
+    const isNeoplastic = NEOPLASTIC_STYLES.includes(this.styleId);
+    if (isNeoplastic) this.ensureMondrianCells();
     const isFlow = FLOW_STYLES.includes(this.styleId);
 
     for (const mark of marks) {
@@ -964,6 +1135,12 @@ export class PaintEngine {
             (c) => mark.x >= c.xStart && mark.x <= c.xEnd && mark.y >= c.yStart && mark.y <= c.yEnd,
           ) ?? this.albersCells[Math.floor(this.albersCells.length / 2)];
         this.renderAlbersCell(note, cell, color);
+      } else if (isNeoplastic) {
+        const cell =
+          this.mondrianCells.find(
+            (c) => mark.x >= c.xStart && mark.x <= c.xEnd && mark.y >= c.yStart && mark.y <= c.yEnd,
+          ) ?? this.mondrianCells[Math.floor(this.mondrianCells.length / 2)];
+        this.renderMondrianCell(cell, color);
       } else {
         renderStroke(this.styleId, {
           ctx: this.ctx,
@@ -985,6 +1162,7 @@ export class PaintEngine {
     const isField = FIELD_STYLES.includes(this.styleId);
     const isStripe = STRIPE_STYLES.includes(this.styleId);
     const isMosaic = MOSAIC_STYLES.includes(this.styleId);
+    const isNeoplastic = NEOPLASTIC_STYLES.includes(this.styleId);
     const isGrid = GRID_STYLES.includes(this.styleId);
     const isFlow = FLOW_STYLES.includes(this.styleId);
     const isSparse = SPARSE_STYLES.includes(this.styleId);
@@ -995,6 +1173,7 @@ export class PaintEngine {
     let rothkoBand: RothkoBand | null = null;
     let louisStripe: LouisStripe | null = null;
     let albersCell: AlbersCell | null = null;
+    let mondrianCell: MondrianCell | null = null;
     if (!sparseSkip) {
       if (isAllOver) {
         this.updateRoamCursor(note.frequency, note.amplitude, 1, 1);
@@ -1004,6 +1183,8 @@ export class PaintEngine {
         louisStripe = this.updateLouisCursor(note.frequency);
       } else if (isMosaic) {
         albersCell = this.updateAlbersCursor(note.frequency);
+      } else if (isNeoplastic) {
+        mondrianCell = this.updateMondrianCursor(note.frequency);
       } else if (isGrid) {
         this.updateGridCursor(note.amplitude);
       } else if (isFlow) {
@@ -1045,6 +1226,8 @@ export class PaintEngine {
         this.renderLouisStripe(note, louisStripe, color);
       } else if (isMosaic && albersCell) {
         this.renderAlbersCell(note, albersCell, color);
+      } else if (isNeoplastic && mondrianCell) {
+        this.renderMondrianCell(mondrianCell, color);
       } else if (isGrid || isFlow || isSparse) {
         // These families always paint in their own technique, regardless of
         // musical phase -- that's how those painters actually worked.
@@ -1112,4 +1295,16 @@ function clamp(v: number, min: number, max: number): number {
 
 function hueDistanceSigned(from: number, to: number): number {
   return ((to - from + 540) % 360) - 180;
+}
+
+/** Darkens (factor < 1) a flat hex swatch by scaling its RGB channels --
+ * used for Mondrian's minor-key mood swing instead of the hsl lightness
+ * math every other painter's continuous palette uses, since his fills are
+ * fixed hex swatches rather than hue/saturation/lightness values. */
+function shadeHex(hex: string, factor: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * factor);
+  const g = Math.round(((n >> 8) & 255) * factor);
+  const b = Math.round((n & 255) * factor);
+  return `rgb(${r}, ${g}, ${b})`;
 }

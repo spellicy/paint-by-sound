@@ -155,6 +155,18 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     saturation: [28, 58],
     lightness: [26, 56],
   },
+  mondrian: {
+    // Just the three Neoplastic primaries -- red, yellow, blue -- snapped
+    // hard from whatever hue the note suggests. The cell renderer
+    // (PaintEngine.renderMondrianCell) actually fills with its own fixed,
+    // flat hex swatches rather than this continuous hsl output, so these
+    // bounds mostly matter for the handful of places (e.g. motif-underlay
+    // seeding) that read the stylized color generically before dispatch.
+    signatureHues: [5, 50, 220],
+    huePull: 0.9,
+    saturation: [55, 85],
+    lightness: [38, 55],
+  },
 };
 
 function hueDistanceSigned(from: number, to: number): number {
