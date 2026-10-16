@@ -105,12 +105,14 @@ export const MOSAIC_STYLES: PaintStyleId[] = ["albers"];
 /** Mondrian: a persistent, asymmetric black-ruled grid built once per piece
  * (like Albers's cells, but an irregular Neoplastic partition rather than a
  * fixed 4x4) -- pitch register selects which cell a note belongs to, and
- * that cell fully repaints in a flat, hard-edged fill pulled toward the
- * three Neoplastic primaries (red/yellow/blue, plus black) by the same
- * note-hue pipeline every painter uses. The opposite of every other family
- * here in technique only: no gradient, no blur, no per-stroke jitter --
- * just a persistent color per cell that only occasionally flips, the same
- * idea Rothko's bands and Louis's stripes use. */
+ * that cell fully repaints in a flat, hard-edged fill using the note's own
+ * stylized hue (PALETTES.mondrian -- six anchors, widened well past his
+ * actual red/yellow/blue by explicit request, for richer variation) or
+ * black. The opposite of every other family here in technique only: no
+ * gradient, no blur, no per-stroke jitter. How OFTEN a cell flips to a
+ * fresh color is rhythm-driven -- louder and onset hits raise the odds,
+ * echoing Albers's amplitude-scaled accent chance -- rather than the flat
+ * rare-flip probability Rothko's bands and Louis's stripes use. */
 export const NEOPLASTIC_STYLES: PaintStyleId[] = ["mondrian"];
 
 /** Simulated position of the robotic arm's brush head on the canvas. */

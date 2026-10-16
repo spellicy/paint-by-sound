@@ -156,18 +156,18 @@ const PALETTES: Record<PaintStyleId, PalettePreset> = {
     lightness: [26, 56],
   },
   mondrian: {
-    // Just the three Neoplastic primaries -- red, yellow, blue -- snapped
-    // hard from whatever hue the note suggests, feeding directly into the
-    // cell renderer (PaintEngine.renderMondrianCell), which nudges this
-    // further away from whatever neighboring cells already show (the same
-    // idea Albers's pickDistinctCellHue uses) but otherwise paints this
-    // hue flat, with no gradient or blur -- the only painter here whose
-    // "signature palette" really is just three colors, not an anchor set
-    // pulled toward.
-    signatureHues: [5, 50, 220],
-    huePull: 0.9,
-    saturation: [55, 85],
-    lightness: [38, 55],
+    // Widened well past the strict three Neoplastic primaries, by explicit
+    // request, to track the music's own hue variety and major/minor mood
+    // the way every other painter's palette does -- a historically
+    // inaccurate choice (he only ever used red/yellow/blue) made on
+    // purpose for visually richer pieces. Six anchors spread further
+    // around the wheel than before, with a moderate pull so real
+    // variation actually comes through rather than hard-snapping to a
+    // handful of fixed points.
+    signatureHues: [5, 30, 50, 140, 220, 280],
+    huePull: 0.6,
+    saturation: [50, 88],
+    lightness: [32, 58],
   },
 };
 

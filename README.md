@@ -88,7 +88,7 @@ painting, and the painters who carried that lineage into minimalism:
 | Marden | **Flow** — a continuous, unhurried curling sweep (a gentler, slower-drifting cousin of Pollock's roam) produces long sinuous single-line loops | Loosely wandering hue across a handful of muted anchors, rather than settling on one fixed color per piece |
 | Miro | **Sparse** — a handful of isolated biomorphic signs across a mostly bare canvas: an irregular amoeba blob, a looping calligraphic squiggle, a flat dot, a radiating star, or a watchful eye, picked at random per mark | A small, flat alphabet of pure poster-paint color — cadmium red, chrome yellow, ultramarine blue, leaf green — snapped hard to those few anchors rather than drifting across the spectrum |
 | Albers | **Mosaic** — a persistent 4x4 grid of 16 cells tiles the whole canvas, echoing how his hundreds of "Homage to the Square" studies get exhibited together; pitch register selects which cell a note belongs to, and each hit fully repaints that cell's own nested squares, whose gap is widest at the top, equal at the sides, and narrowest at the bottom, the series' signature asymmetric niche | Warm, often muted earth tones — ochre, brick, rust, olive — persistent per cell like Rothko's bands, occasionally broken by one jarring contrasting color at the center |
-| Mondrian | **Neoplastic** — an asymmetric black-ruled grid built once per piece (recursive, unevenly-split rectangles, never a neat checkerboard); pitch register selects a cell, and each hit fully repaints it, so the whole grid fills in over the course of a piece — not reserved white space | Just the three Neoplastic primaries — red, yellow, blue — plus black, as flat, fixed-hex fills with no gradient, blur, or per-stroke jitter, the opposite of every other painter's hand-mixed color; unlike every other persistent-cell family here, repeating the same primary across several cells is deliberate, not avoided |
+| Mondrian | **Neoplastic** — an asymmetric black-ruled grid built once per piece (recursive, unevenly-split rectangles, never a neat checkerboard); pitch register selects a cell, and how often that cell flips to a fresh color is rhythm-driven — a loud or onset hit raises the odds, so a busy passage visibly churns the grid while a quiet one leaves it settled | Six hue anchors spread across the wheel — well past his actual red/yellow/blue, by explicit request, for richer pieces — plus black (odds rising on confidently minor-key material and on loud/onset hits), as flat, hard-edged fills with no gradient or blur; unlike every other persistent-cell family here, repeating the same color across several cells is deliberate, not avoided |
 
 ### Major and minor
 
@@ -102,12 +102,11 @@ guess firms up rather than snapping the moment a key is guessed. **de
 Kooning** gets one further step: on minor-key material, his usual hot flesh/
 red/yellow palette eases toward black-and-white as confidence climbs —
 evoking the stark black enamel paintings he turned to in the late 1940s —
-while major-key pieces keep his normal heated coloring. **Mondrian** works
-differently from the rest, since his fills are fixed flat swatches rather
-than a continuous hue/saturation/lightness palette (`PaintEngine.renderMondrianCell`):
-confident minor-key material instead raises the odds a cell lands on black
-over a primary, and darkens whichever primary does land, rather than
-shifting hue or saturation.
+while major-key pieces keep his normal heated coloring. **Mondrian**'s
+colored cells inherit the same continuous saturation/lightness swing as
+everyone else, straight from the stylized note color; confident minor-key
+material additionally raises the odds a cell lands on black instead of a
+color (`PaintEngine.pickMondrianCellColor`) rather than shifting hue.
 
 The focal family (currently just de Kooning) plus the all-over family
 (Pollock, Kandinsky, Delaunay) is phase-aware via `PhraseTracker` (`src/audio/phraseTracker.ts`), which reads the arc of the

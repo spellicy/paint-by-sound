@@ -107,7 +107,7 @@ interface AlbersCell {
   hue: number | null;
 }
 
-type MondrianColorKey = "red" | "yellow" | "blue" | "black";
+type MondrianColorKey = number | "black";
 
 interface MondrianCell {
   xStart: number;
@@ -117,20 +117,13 @@ interface MondrianCell {
   color: MondrianColorKey | null;
 }
 
-/** Flat, fixed hex swatches -- no gradient, no per-note variation in
- * saturation/lightness, the opposite of every other painter's hand-mixed,
- * continuously-varying color. Real Neoplastic primaries: a true vivid
- * red/yellow/blue plus the near-black used for both the grid lines and
- * occasional black cells. Repeating the same primary across several cells
- * is normal and authentic -- real Mondrian compositions do this
- * constantly -- so, unlike every other persistent-cell family here, there's
- * deliberately no logic nudging a cell's color away from its neighbors'. */
-const MONDRIAN_SWATCHES: Record<MondrianColorKey, string> = {
-  red: "#d7262b",
-  yellow: "#f4c20d",
-  blue: "#1c4396",
-  black: "#141414",
-};
+/** Grid lines, and occasional black cells -- a flat near-black cell and a
+ * grid line are the same color in a real Neoplastic composition. Every
+ * other cell fill is computed from the note's own stylized hue (see
+ * renderMondrianCell) rather than a fixed swatch, so it inherits the full
+ * major/minor mood swing (PALETTES.mondrian) the same way Rothko's bands,
+ * Louis's stripes, and Albers's cells do -- no separate custom step here. */
+const MONDRIAN_LINE_COLOR = "#141414";
 
 export interface PaintEngineOptions {
   canvas: HTMLCanvasElement;
@@ -997,7 +990,7 @@ export class PaintEngine {
   private drawMondrianGrid() {
     const unit = Math.min(this.logicalWidth, this.logicalHeight);
     this.ctx.save();
-    this.ctx.strokeStyle = MONDRIAN_SWATCHES.black;
+    this.ctx.strokeStyle = MONDRIAN_LINE_COLOR;
     this.ctx.lineWidth = unit * 0.012;
     for (const cell of this.mondrianCells) {
       this.ctx.strokeRect(cell.xStart, cell.yStart, cell.xEnd - cell.xStart, cell.yEnd - cell.yStart);
@@ -1005,52 +998,55 @@ export class PaintEngine {
     this.ctx.restore();
   }
 
-  /** Snaps the note's own (already palette-pulled toward red/yellow/blue --
-   * see PALETTES.mondrian's huePull: 0.9) hue to whichever of the three
-   * Neoplastic primaries it's nearest to -- no further nudging away from
-   * neighboring cells, deliberately: real Mondrian compositions repeat the
-   * same primary across several blocks constantly, so forcing every cell
-   * distinct (the way pickDistinctCellHue does for Albers) would actively
-   * fight his actual technique, not reproduce it. A flat chance of landing
-   * on black instead (he used solid black cells too, not just grid lines)
-   * rises further on confidently minor-key material, the same "ease toward
-   * something starker on minor" idea de Kooning's palette uses, applied to
-   * cell choice here instead of saturation. */
-  private pickMondrianCellColor(hue: number): MondrianColorKey {
+  /** Either the note's own stylized hue (PALETTES.mondrian's six anchors,
+   * moderately pulled -- see that file's comment) or black. Black's own
+   * odds rise with both key mode and rhythm: confidently minor-key
+   * material (the same "ease toward something starker on minor" idea de
+   * Kooning's palette uses, applied to cell choice here instead of
+   * saturation) and a loud or onset hit (echoing a percussive strike
+   * reading as a stark accent) both make it more likely, on top of a flat
+   * baseline. No nudging a cell's hue away from its neighbors' (the way
+   * pickDistinctCellHue does for Albers) -- repeating the same color
+   * across several cells is fine and still reads as a coherent grid. */
+  private pickMondrianCellColor(rawColor: NoteColor, note: NoteEvent): MondrianColorKey {
     const key = this.keyEstimate;
-    const blackChance = 0.08 + (key.mode === "minor" ? key.confidence * 0.18 : 0);
+    const blackChance =
+      0.05 +
+      (key.mode === "minor" ? key.confidence * 0.16 : 0) +
+      note.amplitude * 0.08 +
+      (note.isOnset ? 0.05 : 0);
     if (this.rand() < blackChance) return "black";
-    const anchors: Array<[MondrianColorKey, number]> = [
-      ["red", 5],
-      ["yellow", 50],
-      ["blue", 220],
-    ];
-    let best: MondrianColorKey = "red";
-    let bestDist = Infinity;
-    for (const [name, h] of anchors) {
-      const d = Math.abs(hueDistanceSigned(hue, h));
-      if (d < bestDist) {
-        bestDist = d;
-        best = name;
-      }
-    }
-    return best;
+    return rawColor.hue;
   }
 
-  /** Flat, hard-edged fills only -- fixed swatches, no gradient, no blur,
-   * no per-note variation in saturation/lightness, the opposite of every
-   * other family's hand-painted look. Like Albers's cells (and Rothko's
-   * bands, Louis's stripes), a cell fully repaints -- not builds up -- on
-   * every hit, in a persistent color that only occasionally flips, rather
-   * than a fresh pick every time. */
-  private renderMondrianCell(cell: MondrianCell, rawColor: NoteColor) {
-    if (cell.color === null || this.rand() < 0.05) {
-      cell.color = this.pickMondrianCellColor(rawColor.hue);
+  /** Flat, hard-edged fills only -- no gradient, no blur -- but, unlike the
+   * original strictly-three-primary version, driven by the same continuous
+   * note-hue pipeline every other painter uses (PALETTES.mondrian), by
+   * explicit request for more visually varied pieces than his actual
+   * palette ever had. Rhythm decides how often a cell flips to a fresh
+   * color: the base chance climbs with the note's amplitude and gets a
+   * further bump on an onset, so a loud, busy passage visibly churns the
+   * grid while a quiet one leaves it mostly settled -- the same kind of
+   * amplitude-driven variation Albers's nested-square accent uses. Like
+   * Albers's cells (and Rothko's bands, Louis's stripes), a cell fully
+   * repaints -- not builds up -- on every hit. */
+  private renderMondrianCell(cell: MondrianCell, note: NoteEvent, rawColor: NoteColor) {
+    const flipChance = 0.04 + note.amplitude * 0.12 + (note.isOnset ? 0.08 : 0);
+    if (cell.color === null || this.rand() < flipChance) {
+      cell.color = this.pickMondrianCellColor(rawColor, note);
     }
-    const key = this.keyEstimate;
-    const shade = key.mode === "minor" ? 1 - key.confidence * 0.3 : 1;
+
+    // Saturation/lightness already carry the key-mode mood swing from
+    // stylizeColor (vivid on a confident major key, muted and dark on a
+    // confident minor one) -- inherited the same way Rothko/Louis/Albers
+    // do, not recomputed here.
+    const fill =
+      cell.color === "black"
+        ? MONDRIAN_LINE_COLOR
+        : `hsl(${cell.color.toFixed(1)}, ${rawColor.saturation.toFixed(0)}%, ${rawColor.lightness.toFixed(0)}%)`;
+
     this.ctx.save();
-    this.ctx.fillStyle = shadeHex(MONDRIAN_SWATCHES[cell.color], shade);
+    this.ctx.fillStyle = fill;
     this.ctx.fillRect(cell.xStart, cell.yStart, cell.xEnd - cell.xStart, cell.yEnd - cell.yStart);
     this.ctx.restore();
     this.drawMondrianGrid();
@@ -1130,7 +1126,7 @@ export class PaintEngine {
           this.mondrianCells.find(
             (c) => mark.x >= c.xStart && mark.x <= c.xEnd && mark.y >= c.yStart && mark.y <= c.yEnd,
           ) ?? this.mondrianCells[Math.floor(this.mondrianCells.length / 2)];
-        this.renderMondrianCell(cell, color);
+        this.renderMondrianCell(cell, note, color);
       } else {
         renderStroke(this.styleId, {
           ctx: this.ctx,
@@ -1217,7 +1213,7 @@ export class PaintEngine {
       } else if (isMosaic && albersCell) {
         this.renderAlbersCell(note, albersCell, color);
       } else if (isNeoplastic && mondrianCell) {
-        this.renderMondrianCell(mondrianCell, color);
+        this.renderMondrianCell(mondrianCell, note, color);
       } else if (isGrid || isFlow || isSparse) {
         // These families always paint in their own technique, regardless of
         // musical phase -- that's how those painters actually worked.
@@ -1285,16 +1281,4 @@ function clamp(v: number, min: number, max: number): number {
 
 function hueDistanceSigned(from: number, to: number): number {
   return ((to - from + 540) % 360) - 180;
-}
-
-/** Darkens (factor < 1) a flat hex swatch by scaling its RGB channels --
- * used for Mondrian's minor-key mood swing instead of the hsl lightness
- * math every other painter's continuous palette uses, since his fills are
- * fixed hex swatches rather than hue/saturation/lightness values. */
-function shadeHex(hex: string, factor: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 255) * factor);
-  const g = Math.round(((n >> 8) & 255) * factor);
-  const b = Math.round((n & 255) * factor);
-  return `rgb(${r}, ${g}, ${b})`;
 }
