@@ -512,21 +512,53 @@ export class PaintEngine {
   /** Rothko: canvas divided into a few large horizontal fields; pitch
    * register selects which field a note belongs to, and the cursor lands
    * anywhere across that field's full width -- building a few full-bleed
-   * color bands rather than one wandering brush. */
-  private ensureRothkoBands() {
+   * color bands rather than one wandering brush.
+   *
+   * Band heights are randomized per piece, not fixed thirds -- real Rothko
+   * sometimes painted close to even bands, but just as often a dominant
+   * field with one or two much thinner ones squeezed alongside it. A
+   * quarter of the time this lands close to even (jittered a little, so
+   * it's never robotically identical); the rest of the time weights are
+   * drawn skewed (rand() * rand(), which biases toward small values with
+   * an occasional much larger one) for real unevenness. The opening note's
+   * own pitch register gets a further weight boost -- the same high/mid/low
+   * mapping updateRothkoCursor uses below -- so which field ends up
+   * dominant has some real relationship to how the piece actually opens,
+   * not pure chance. */
+  private ensureRothkoBands(seedFrequency: number) {
     if (this.rothkoBands.length) return;
     const height = this.logicalHeight;
-    // Adjacent bands overlap by a few percent of height, rather than
-    // leaving a hard-edged gap between them -- each band's own paint
-    // already tapers to near-nothing at its true top/bottom (see
-    // renderRothkoField), so where two bands' soft edges share this
-    // overlap zone their colors layer into a genuine gradient blend
-    // instead of meeting at a visible seam.
-    const bounds: Array<[number, number]> = [
-      [0.04, 0.37],
-      [0.31, 0.69],
-      [0.63, 0.96],
-    ];
+    const margin = 0.04;
+    const usable = 1 - margin * 2;
+    // A few percent of height -- each band's own paint already tapers to
+    // near-nothing at its true top/bottom (see renderRothkoField), so
+    // where two bands' soft edges share this overlap zone their colors
+    // layer into a genuine gradient blend instead of meeting at a seam.
+    const overlap = 0.03;
+    const count = 3;
+
+    const weights =
+      this.rand() < 0.25
+        ? Array.from({ length: count }, () => 0.9 + this.rand() * 0.2)
+        : Array.from({ length: count }, () => 0.3 + this.rand() * this.rand() * 1.4);
+
+    let seedIndex = 1;
+    if (seedFrequency > 0) {
+      const midi = 69 + 12 * Math.log2(seedFrequency / 440);
+      const norm = clamp((midi - 40) / 60, 0, 1);
+      seedIndex = norm > 0.62 ? 0 : norm < 0.38 ? 2 : 1;
+    }
+    weights[seedIndex] *= 1.3 + this.rand() * 0.6;
+
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    const bounds: Array<[number, number]> = [];
+    let cursor = margin;
+    for (let i = 0; i < count; i++) {
+      const span = (weights[i] / totalWeight) * usable;
+      bounds.push([cursor - (i > 0 ? overlap : 0), cursor + span + (i < count - 1 ? overlap : 0)]);
+      cursor += span;
+    }
+
     this.rothkoBands = bounds.map(([a, b]) => ({
       yStart: height * a,
       yEnd: height * b,
@@ -535,7 +567,7 @@ export class PaintEngine {
   }
 
   private updateRothkoCursor(frequency: number): RothkoBand {
-    this.ensureRothkoBands();
+    this.ensureRothkoBands(frequency);
     const width = this.logicalWidth;
     let index = 1;
     if (frequency > 0) {
@@ -1084,7 +1116,11 @@ export class PaintEngine {
     }
 
     const isField = FIELD_STYLES.includes(this.styleId);
-    if (isField) this.ensureRothkoBands();
+    // No real pitch to seed the dominant band from here -- motif marks
+    // carry a hue, not a frequency -- so this falls back to the
+    // unweighted middle band, same as updateRothkoCursor does for a
+    // silent/unpitched note.
+    if (isField) this.ensureRothkoBands(0);
     const isStripe = STRIPE_STYLES.includes(this.styleId);
     if (isStripe) this.ensureLouisStripes();
     const isMosaic = MOSAIC_STYLES.includes(this.styleId);
