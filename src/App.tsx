@@ -119,7 +119,7 @@ export default function App() {
             className={
               isFullscreen
                 ? "relative flex h-screen w-screen items-center justify-center bg-black"
-                : "group relative overflow-hidden rounded-lg border border-stone-800 bg-[#e8e2d5] p-3 shadow-inner"
+                : "relative overflow-hidden rounded-lg border border-stone-800 bg-[#e8e2d5] p-3 shadow-inner"
             }
           >
             <canvas
@@ -145,7 +145,7 @@ export default function App() {
                   onClick={toggleFullscreen}
                   title="Full screen"
                   aria-label="Full screen"
-                  className="absolute right-5 top-5 rounded-md bg-stone-950/60 p-1.5 text-stone-200 opacity-0 transition hover:bg-stone-950/85 group-hover:opacity-100"
+                  className="absolute right-5 top-5 rounded-md bg-stone-950/60 p-1.5 text-stone-200 hover:bg-stone-950/85"
                 >
                   <FullscreenIcon />
                 </button>

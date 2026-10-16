@@ -166,11 +166,11 @@ npm run preview   # serve the production build locally
 
 Open the app, tap "Listen live" (or "Upload a file"), pick a brush style,
 and play some music. The canvas keeps painting for as long as audio plays.
-Hover the canvas for a full screen button (always visible once you're in
-full screen) to watch just the painting, scaled to fill the screen; exit
-full screen (or hit Esc) to get the rest of the app back. It's the same
-canvas the whole time, so painting never pauses or resets across the
-switch.
+The full screen button in its top-right corner (always visible, not
+hover-only -- the gallery's trash icon already settled that touch devices
+need this) scales just the painting to fill the screen; exit full screen
+(or hit Esc) to get the rest of the app back. It's the same canvas the
+whole time, so painting never pauses or resets across the switch.
 
 ## Project layout
 
