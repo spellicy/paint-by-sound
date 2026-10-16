@@ -166,6 +166,11 @@ npm run preview   # serve the production build locally
 
 Open the app, tap "Listen live" (or "Upload a file"), pick a brush style,
 and play some music. The canvas keeps painting for as long as audio plays.
+Hover the canvas for a full screen button (always visible once you're in
+full screen) to watch just the painting, scaled to fill the screen; exit
+full screen (or hit Esc) to get the rest of the app back. It's the same
+canvas the whole time, so painting never pauses or resets across the
+switch.
 
 ## Project layout
 
@@ -227,6 +232,12 @@ src/
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same
   device — use a separate speaker/device, or **Upload a file** instead.
+- The full screen button checks `document.fullscreenEnabled` before
+  showing itself, and the request itself is still wrapped in error
+  handling on top of that (`App.tsx`) — iPhone Safari in particular has a
+  long history of reporting that flag as supported while actually
+  rejecting the request for a plain element (unlike iPad, which gained
+  real support in iOS 16.4). Desktop and Android browsers aren't affected.
 - This is a software concept demo, not a control system for physical
   hardware; adapting the same `NoteEvent` stream to drive an actual robotic
   arm would replace `PaintEngine` with a motion-control client.
