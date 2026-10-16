@@ -807,7 +807,7 @@ export class PaintEngine {
     return hue;
   }
 
-  /** Albers: canvas divided into a persistent 4x4 grid of 16 cells, echoing
+  /** Albers: canvas divided into a persistent square grid of cells, echoing
    * how his hundreds of "Homage to the Square" studies get exhibited tiled
    * together in a salon hang -- edge to edge, with only a hairline of mat
    * between them, not a wide gallery-style gutter. Cells are square (each
@@ -818,13 +818,24 @@ export class PaintEngine {
    * a much wider gap between columns than between rows. The whole square
    * grid is centered on the canvas instead, so any letterboxing space
    * lands outside the grid as one shared margin, not inside every cell.
-   * Pitch register selects which cell a note belongs to. */
-  private ensureAlbersCells() {
+   * Pitch register selects which cell a note belongs to.
+   *
+   * The grid size itself is randomized per piece -- 4x4 (16 cells) is his
+   * most common "Homage to the Square" exhibition unit and stays the
+   * default, but it occasionally steps up to 5x5, 6x6, or even 7x7 for a
+   * denser salon hang of smaller studies, each step deliberately rarer
+   * than the last. A louder opening note nudges the odds toward a larger
+   * grid -- the same "tie it to how the piece actually starts" idea
+   * Rothko's band weighting uses -- rather than the size being pure
+   * chance. */
+  private ensureAlbersCells(seedAmplitude: number) {
     if (this.albersCells.length) return;
     const width = this.logicalWidth;
     const height = this.logicalHeight;
-    const rows = 4;
-    const cols = 4;
+    const sizeRoll = this.rand() + seedAmplitude * 0.35;
+    const size = sizeRoll > 0.93 ? 7 : sizeRoll > 0.8 ? 6 : sizeRoll > 0.55 ? 5 : 4;
+    const rows = size;
+    const cols = size;
     const unit = Math.min(width, height);
     const margin = unit * 0.006;
     const gutter = unit * 0.004;
@@ -850,8 +861,8 @@ export class PaintEngine {
     this.albersCells = cells;
   }
 
-  private updateAlbersCursor(frequency: number): AlbersCell {
-    this.ensureAlbersCells();
+  private updateAlbersCursor(frequency: number, amplitude: number): AlbersCell {
+    this.ensureAlbersCells(amplitude);
     const count = this.albersCells.length;
     let index = Math.floor(count / 2);
     if (frequency > 0) {
@@ -1124,7 +1135,10 @@ export class PaintEngine {
     const isStripe = STRIPE_STYLES.includes(this.styleId);
     if (isStripe) this.ensureLouisStripes();
     const isMosaic = MOSAIC_STYLES.includes(this.styleId);
-    if (isMosaic) this.ensureAlbersCells();
+    // No real opening note here -- motif marks carry a hue/amplitude of
+    // their own, not a sequential "first note" -- so this falls back to
+    // the unweighted size roll, same as ensureRothkoBands(0) above.
+    if (isMosaic) this.ensureAlbersCells(0);
     const isNeoplastic = NEOPLASTIC_STYLES.includes(this.styleId);
     if (isNeoplastic) this.ensureMondrianCells();
     const isFlow = FLOW_STYLES.includes(this.styleId);
@@ -1204,7 +1218,7 @@ export class PaintEngine {
       } else if (isStripe) {
         louisStripe = this.updateLouisCursor(note.frequency);
       } else if (isMosaic) {
-        albersCell = this.updateAlbersCursor(note.frequency);
+        albersCell = this.updateAlbersCursor(note.frequency, note.amplitude);
       } else if (isNeoplastic) {
         mondrianCell = this.updateMondrianCursor(note.frequency);
       } else if (isGrid) {

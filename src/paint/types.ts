@@ -75,7 +75,7 @@ export const PAINT_STYLES: PaintStyleInfo[] = [
   {
     id: "albers",
     label: "Albers",
-    blurb: "A persistent 4x4 grid of nested-square studies, tiled like a salon hang.",
+    blurb: "A persistent grid of nested-square studies, 4x4 up to 7x7, tiled like a salon hang.",
   },
   {
     id: "mondrian",
@@ -95,16 +95,19 @@ export const FLOW_STYLES: PaintStyleId[] = ["marden"];
  * structurally similar to Rothko's horizontal fields (see FIELD_STYLES) but
  * a distinct family since the geometry, palette, and edge technique differ. */
 export const STRIPE_STYLES: PaintStyleId[] = ["louis"];
-/** Albers: a persistent 4x4 grid of 16 cells tiling the whole canvas, each
- * its own "Homage to the Square" study -- pitch register selects which
- * cell a note belongs to, and that cell's nested squares get repainted
- * (not just added to) on every hit, in a persistent color family that only
+/** Albers: a persistent square grid tiling the whole canvas, each cell its
+ * own "Homage to the Square" study -- pitch register selects which cell a
+ * note belongs to, and that cell's nested squares get repainted (not just
+ * added to) on every hit, in a persistent color family that only
  * occasionally shifts, echoing how Rothko's bands and Louis's stripes hold
- * a color across many hits rather than reshuffling on every note. */
+ * a color across many hits rather than reshuffling on every note. The grid
+ * size itself (4x4 up to 7x7) is randomized once per piece, each step up
+ * rarer than the last, nudged by the opening note's loudness -- see
+ * ensureAlbersCells's comment. */
 export const MOSAIC_STYLES: PaintStyleId[] = ["albers"];
 /** Mondrian: a persistent, asymmetric black-ruled grid built once per piece
  * (like Albers's cells, but an irregular Neoplastic partition rather than a
- * fixed 4x4) -- pitch register selects which cell a note belongs to, and
+ * regular square one) -- pitch register selects which cell a note belongs to, and
  * that cell fully repaints in a flat, hard-edged fill using the note's own
  * stylized hue (PALETTES.mondrian -- six anchors, widened well past his
  * actual red/yellow/blue by explicit request, for richer variation) or
