@@ -25,16 +25,18 @@ function FullscreenIcon() {
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
-  // document.fullscreenEnabled is a real feature check, not a guess -- but
-  // iPhone Safari (unlike iPad, which gained this in iOS 16.4) has a long
-  // history of declaring support it doesn't reliably honor for a plain
-  // element, so toggleFullscreen below still has to handle a rejected
-  // request on top of this, rather than trusting this flag alone.
-  const [fullscreenSupported] = useState(
-    () => typeof document !== "undefined" && document.fullscreenEnabled,
-  );
+  // Drives the actual "fill the screen" layout by itself, via plain CSS --
+  // deliberately not gated on the browser's Fullscreen API being supported
+  // (document.fullscreenEnabled), since that API is genuinely unreliable on
+  // iPhone Safari specifically: it can report that flag as true and still
+  // reject the real request for a plain element (iPad, unlike iPhone, got
+  // real support in iOS 16.4). Gating the button's very existence on that
+  // flag, as an earlier version of this did, meant the button just didn't
+  // exist at all on the one platform this app has been tested on the most.
+  // The real Fullscreen API is still requested below, best-effort, as a
+  // bonus layer (hides the browser chrome too) on top of this CSS layout
+  // where it happens to work -- but the core feature never depends on it.
+  const [isMaximized, setIsMaximized] = useState(false);
   const {
     styleId,
     setStyleId,
@@ -58,34 +60,57 @@ export default function App() {
     void loadGallery().then(setPieces);
   }, []);
 
-  // Tracks real fullscreen state rather than just the button's own intent,
-  // since the browser's own Esc handling (or any other way out) exits
-  // fullscreen without going through toggleFullscreen below -- without
-  // this listener the UI would keep showing the fullscreen layout after
-  // the browser had already left it.
+  // If the bonus real-fullscreen layer (see enterFullscreen) is active and
+  // the browser's own Esc handling (or any other route) exits it, drop out
+  // of maximized mode too rather than leaving the CSS layout stranded on
+  // screen with no real fullscreen underneath it.
   useEffect(() => {
-    const handleChange = () => setIsFullscreen(document.fullscreenElement === canvasWrapRef.current);
+    const handleChange = () => {
+      if (!document.fullscreenElement) setIsMaximized(false);
+    };
     document.addEventListener("fullscreenchange", handleChange);
     return () => document.removeEventListener("fullscreenchange", handleChange);
   }, []);
 
+  // Esc exits maximized mode even when the real Fullscreen API never
+  // engaged (so no native fullscreenchange will ever fire) -- most
+  // reliably the case on iPhone. A no-op the rest of the time, since a
+  // successful real-fullscreen exit already sets isMaximized false via the
+  // listener above before this would otherwise fire a second time.
+  useEffect(() => {
+    if (!isMaximized) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMaximized(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isMaximized]);
+
+  // Locks background scroll while maximized -- the fixed overlay covers
+  // the viewport either way, but without this the page behind it can still
+  // scroll under touch, which iOS Safari in particular renders as visible
+  // jank around a position: fixed element during momentum scrolling.
+  useEffect(() => {
+    if (!isMaximized) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMaximized]);
+
   const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
+    if (isMaximized) {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      setIsMaximized(false);
       return;
     }
-    const el = canvasWrapRef.current;
-    if (!el?.requestFullscreen) {
-      setFullscreenError("Full screen isn't available in this browser.");
-      return;
-    }
-    el.requestFullscreen().catch(() => {
-      // iPhone Safari in particular can report fullscreenEnabled: true and
-      // still reject the actual request -- fail visibly instead of the
-      // button silently doing nothing.
-      setFullscreenError("Full screen isn't available in this browser.");
-      setTimeout(() => setFullscreenError(null), 3000);
-    });
+    setIsMaximized(true);
+    // Best-effort real fullscreen on top of the CSS layout above -- hides
+    // the browser's own chrome too, where supported. Silently ignored if
+    // not: the CSS layout alone already delivers the actual "fill the
+    // screen, exit to get the app back" experience on every platform.
+    void canvasWrapRef.current?.requestFullscreen?.().catch(() => {});
   };
 
   const handleSave = async () => {
@@ -117,8 +142,8 @@ export default function App() {
           <div
             ref={canvasWrapRef}
             className={
-              isFullscreen
-                ? "relative flex h-screen w-screen items-center justify-center bg-black"
+              isMaximized
+                ? "fixed inset-0 z-50 flex items-center justify-center bg-black"
                 : "relative overflow-hidden rounded-lg border border-stone-800 bg-[#e8e2d5] p-3 shadow-inner"
             }
           >
@@ -127,12 +152,12 @@ export default function App() {
               width={CANVAS_SIZE.width}
               height={CANVAS_SIZE.height}
               className={
-                isFullscreen
+                isMaximized
                   ? "h-auto max-h-screen w-auto max-w-[100vw] bg-[#f7f3ec]"
                   : "w-full rounded bg-[#f7f3ec]"
               }
             />
-            {isFullscreen ? (
+            {isMaximized ? (
               <button
                 onClick={toggleFullscreen}
                 className="absolute right-5 top-5 rounded-md bg-stone-950/70 px-3 py-1.5 text-sm font-medium text-stone-200 hover:bg-stone-950/90"
@@ -140,21 +165,16 @@ export default function App() {
                 Exit full screen
               </button>
             ) : (
-              fullscreenSupported && (
-                <button
-                  onClick={toggleFullscreen}
-                  title="Full screen"
-                  aria-label="Full screen"
-                  className="absolute right-5 top-5 rounded-md bg-stone-950/60 p-1.5 text-stone-200 hover:bg-stone-950/85"
-                >
-                  <FullscreenIcon />
-                </button>
-              )
+              <button
+                onClick={toggleFullscreen}
+                title="Full screen"
+                aria-label="Full screen"
+                className="absolute right-5 top-5 rounded-md bg-stone-950/60 p-1.5 text-stone-200 hover:bg-stone-950/85"
+              >
+                <FullscreenIcon />
+              </button>
             )}
           </div>
-          {fullscreenError && (
-            <p className="text-xs text-amber-500">{fullscreenError}</p>
-          )}
           <StatusBar status={status} sourceMode={sourceMode} trackName={trackName} />
           {error && (
             <p className="rounded-md border border-red-900 bg-red-950/50 px-3 py-2 text-sm text-red-300">

@@ -168,9 +168,11 @@ Open the app, tap "Listen live" (or "Upload a file"), pick a brush style,
 and play some music. The canvas keeps painting for as long as audio plays.
 The full screen button in its top-right corner (always visible, not
 hover-only -- the gallery's trash icon already settled that touch devices
-need this) scales just the painting to fill the screen; exit full screen
-(or hit Esc) to get the rest of the app back. It's the same canvas the
-whole time, so painting never pauses or resets across the switch.
+need this) scales just the painting to fill the screen via plain CSS, so
+it works the same on every device regardless of browser Fullscreen API
+support; exit full screen (or hit Esc) to get the rest of the app back.
+It's the same canvas the whole time, so painting never pauses or resets
+across the switch.
 
 ## Project layout
 
@@ -232,12 +234,16 @@ src/
   microphone (an iOS platform restriction with no web API workaround), so
   **Listen live** can't hear music playing in another app on the same
   device — use a separate speaker/device, or **Upload a file** instead.
-- The full screen button checks `document.fullscreenEnabled` before
-  showing itself, and the request itself is still wrapped in error
-  handling on top of that (`App.tsx`) — iPhone Safari in particular has a
-  long history of reporting that flag as supported while actually
-  rejecting the request for a plain element (unlike iPad, which gained
-  real support in iOS 16.4). Desktop and Android browsers aren't affected.
+- The full screen button's actual "fill the screen" layout (`App.tsx`) is
+  plain CSS, deliberately not gated on or dependent on the browser's
+  Fullscreen API (`document.fullscreenEnabled`/`requestFullscreen`) —
+  iPhone Safari in particular has a long history of reporting that flag as
+  supported while actually rejecting the request for a plain element
+  (unlike iPad, which gained real support in iOS 16.4); an earlier version
+  of this gated the button's existence on that flag, which meant no button
+  at all on iPhone. The real Fullscreen API is still requested best-effort
+  on top of the CSS layout (hides the browser chrome too, where it works),
+  but the feature itself doesn't depend on it succeeding.
 - This is a software concept demo, not a control system for physical
   hardware; adapting the same `NoteEvent` stream to drive an actual robotic
   arm would replace `PaintEngine` with a motion-control client.
